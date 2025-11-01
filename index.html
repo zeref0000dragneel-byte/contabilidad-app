@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Contabilidad - Mi Negocio</title>
+    <link rel="stylesheet" href="estilos.css">
+    <!-- CDN para generar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- CDN para gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Contenedor principal -->
+    <div class="container">
+        <!-- Encabezado -->
+        <header>
+            <h1>📊 Sistema de Contabilidad</h1>
+            <p class="subtitle">Gestiona las finanzas de tu negocio</p>
+        </header>
+
+        <!-- Navegación principal -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="ventas">Ventas</button>
+            <button class="tab-btn" data-tab="gastos">Gastos</button>
+            <button class="tab-btn" data-tab="reportes">Reportes</button>
+        </nav>
+
+        <!-- Sección Dashboard -->
+        <section id="dashboard" class="tab-content active">
+            <h2>📈 Resumen General</h2>
+            
+            <!-- Tarjetas de resumen -->
+            <div class="cards-container">
+                <div class="card card-ingreso">
+                    <div class="card-icon">💰</div>
+                    <div class="card-content">
+                        <h3>Ingresos del Día</h3>
+                        <p class="card-amount" id="ingresos-dia">$0.00</p>
+                    </div>
+                </div>
+                
+                <div class="card card-egreso">
+                    <div class="card-icon">💸</div>
+                    <div class="card-content">
+                        <h3>Gastos del Día</h3>
+                        <p class="card-amount" id="egresos-dia">$0.00</p>
+                    </div>
+                </div>
+                
+                <div class="card card-saldo">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                        <h3>Saldo del Día</h3>
+                        <p class="card-amount" id="saldo-dia">$0.00</p>
+                    </div>
+                </div>
+                
+                <div class="card card-total">
+                    <div class="card-icon">🏦</div>
+                    <div class="card-content">
+                        <h3>Saldo Total</h3>
+                        <p class="card-amount" id="saldo-total">$0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen por períodos -->
+            <div class="summary-section">
+                <h3>Resumen por Período</h3>
+                <div class="period-cards">
+                    <div class="period-card">
+                        <h4>Esta Semana</h4>
+                        <p class="period-amount" id="saldo-semanal">$0.00</p>
+                    </div>
+                    <div class="period-card">
+                        <h4>Este Mes</h4>
+                        <p class="period-amount" id="saldo-mensual">$0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Últimas transacciones -->
+            <div class="recent-transactions">
+                <h3>Últimas Transacciones</h3>
+                <div id="transacciones-recientes" class="transactions-list">
+                    <p class="no-data">No hay transacciones registradas aún</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Ventas -->
+        <section id="ventas" class="tab-content">
+            <h2>🛒 Registrar Venta</h2>
+            
+            <!-- Formulario de venta -->
+            <form id="form-venta" class="form-container">
+                <div class="form-group">
+                    <label for="venta-fecha">Fecha:</label>
+                    <input type="date" id="venta-fecha" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="venta-descripcion">Descripción del Producto/Servicio:</label>
+                    <input type="text" id="venta-descripcion" placeholder="Ej: Playeras, Consulta médica, etc." required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="venta-cantidad">Cantidad:</label>
+                        <input type="number" id="venta-cantidad" min="1" step="0.01" placeholder="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="venta-precio">Precio Unitario:</label>
+                        <input type="number" id="venta-precio" min="0" step="0.01" placeholder="0.00" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="venta-total">Total (calculado automáticamente):</label>
+                    <input type="number" id="venta-total" readonly class="readonly">
+                </div>
+                
+                <div class="form-group">
+                    <label for="venta-metodo">Método de Pago:</label>
+                    <select id="venta-metodo" required>
+                        <option value="">Selecciona...</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">💾 Guardar Venta</button>
+            </form>
+
+            <!-- Lista de ventas -->
+            <div class="records-section">
+                <h3>Historial de Ventas</h3>
+                <div class="filters">
+                    <input type="date" id="filtro-fecha-ventas" placeholder="Filtrar por fecha">
+                    <button class="btn btn-secondary" onclick="filtrarVentas()">Filtrar</button>
+                    <button class="btn btn-secondary" onclick="limpiarFiltroVentas()">Limpiar</button>
+                </div>
+                <div id="lista-ventas" class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unit.</th>
+                                <th>Total</th>
+                                <th>Método</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-ventas">
+                            <tr>
+                                <td colspan="7" class="no-data">No hay ventas registradas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Gastos -->
+        <section id="gastos" class="tab-content">
+            <h2>💳 Registrar Gasto</h2>
+            
+            <!-- Formulario de gasto -->
+            <form id="form-gasto" class="form-container">
+                <div class="form-group">
+                    <label for="gasto-fecha">Fecha:</label>
+                    <input type="date" id="gasto-fecha" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gasto-descripcion">Descripción del Gasto:</label>
+                    <input type="text" id="gasto-descripcion" placeholder="Ej: Renta, Servicios, Inventario, Sueldos" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gasto-categoria">Categoría:</label>
+                    <select id="gasto-categoria" required>
+                        <option value="">Selecciona...</option>
+                        <option value="renta">Renta</option>
+                        <option value="servicios">Servicios (luz, agua, internet)</option>
+                        <option value="inventario">Inventario</option>
+                        <option value="sueldos">Sueldos</option>
+                        <option value="marketing">Marketing/Publicidad</option>
+                        <option value="mantenimiento">Mantenimiento</option>
+                        <option value="impuestos">Impuestos</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gasto-monto">Monto:</label>
+                    <input type="number" id="gasto-monto" min="0" step="0.01" placeholder="0.00" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gasto-metodo">Método de Pago:</label>
+                    <select id="gasto-metodo" required>
+                        <option value="">Selecciona...</option>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">💾 Guardar Gasto</button>
+            </form>
+
+            <!-- Lista de gastos -->
+            <div class="records-section">
+                <h3>Historial de Gastos</h3>
+                <div class="filters">
+                    <input type="date" id="filtro-fecha-gastos" placeholder="Filtrar por fecha">
+                    <select id="filtro-categoria-gastos">
+                        <option value="">Todas las categorías</option>
+                        <option value="renta">Renta</option>
+                        <option value="servicios">Servicios</option>
+                        <option value="inventario">Inventario</option>
+                        <option value="sueldos">Sueldos</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="mantenimiento">Mantenimiento</option>
+                        <option value="impuestos">Impuestos</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="filtrarGastos()">Filtrar</button>
+                    <button class="btn btn-secondary" onclick="limpiarFiltroGastos()">Limpiar</button>
+                </div>
+                <div id="lista-gastos" class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-gastos">
+                            <tr>
+                                <td colspan="6" class="no-data">No hay gastos registrados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Reportes -->
+        <section id="reportes" class="tab-content">
+            <h2>📊 Reportes y Análisis</h2>
+            
+            <!-- Filtros de reporte -->
+            <div class="report-filters">
+                <div class="form-group">
+                    <label for="reporte-fecha-inicio">Fecha Inicio:</label>
+                    <input type="date" id="reporte-fecha-inicio">
+                </div>
+                <div class="form-group">
+                    <label for="reporte-fecha-fin">Fecha Fin:</label>
+                    <input type="date" id="reporte-fecha-fin">
+                </div>
+                <button class="btn btn-primary" onclick="generarReporte()">Generar Reporte</button>
+                <button class="btn btn-secondary" onclick="exportarPDF()">📥 Exportar a PDF</button>
+            </div>
+
+            <!-- Reporte de Ventas -->
+            <div class="report-section">
+                <h3>📈 Ventas por Período</h3>
+                <div class="report-summary">
+                    <div class="summary-item">
+                        <span>Total Ventas:</span>
+                        <strong id="total-ventas-reporte">$0.00</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Número de Ventas:</span>
+                        <strong id="numero-ventas-reporte">0</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Promedio por Venta:</span>
+                        <strong id="promedio-ventas-reporte">$0.00</strong>
+                    </div>
+                </div>
+                <canvas id="grafica-ventas"></canvas>
+            </div>
+
+            <!-- Reporte de Gastos -->
+            <div class="report-section">
+                <h3>💸 Gastos por Categoría</h3>
+                <div class="report-summary">
+                    <div class="summary-item">
+                        <span>Total Gastos:</span>
+                        <strong id="total-gastos-reporte">$0.00</strong>
+                    </div>
+                </div>
+                <canvas id="grafica-gastos"></canvas>
+            </div>
+
+            <!-- Ganancias Netas -->
+            <div class="report-section">
+                <h3>💰 Ganancias Netas</h3>
+                <div class="net-profit">
+                    <h4 id="ganancia-neta-texto">Ganancia Neta: $0.00</h4>
+                </div>
+                <canvas id="grafica-ganancias"></canvas>
+            </div>
+
+            <!-- Productos más vendidos -->
+            <div class="report-section">
+                <h3>🏆 Productos/Servicios Más Vendidos</h3>
+                <div id="productos-mas-vendidos" class="product-list">
+                    <p class="no-data">No hay datos disponibles</p>
+                </div>
+            </div>
+
+            <!-- Comparativa mensual -->
+            <div class="report-section">
+                <h3>📅 Comparativa Mensual</h3>
+                <canvas id="grafica-mensual"></canvas>
+            </div>
+        </section>
+
+        <!-- Sección de respaldo -->
+        <div class="backup-section">
+            <h3>💾 Respaldo de Datos</h3>
+            <div class="backup-buttons">
+                <button class="btn btn-success" onclick="exportarDatos()">📥 Exportar Datos</button>
+                <button class="btn btn-warning" onclick="importarDatos()">📤 Importar Datos</button>
+                <input type="file" id="file-input" accept=".json" style="display: none;" onchange="cargarDatosImportados(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de confirmación -->
+    <div id="mensaje-exito" class="mensaje-flotante"></div>
+
+    <!-- Script principal -->
+    <script src="app.js"></script>
+</body>
+</html>
+
