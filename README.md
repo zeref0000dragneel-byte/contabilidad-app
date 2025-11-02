@@ -18,11 +18,24 @@ Este es un sistema completo de contabilidad para tu negocio pequeño que te perm
 
 ### Paso 1: Descargar los archivos
 
-Asegúrate de tener estos 4 archivos en una misma carpeta:
+Asegúrate de tener estos archivos en una misma carpeta:
 - `index.html`
 - `estilos.css`
 - `app.js`
+- `manifest.json` (NUEVO - para PWA)
+- `service-worker.js` (NUEVO - para funcionalidad offline)
+- `icon-192.png` (NUEVO - icono 192x192)
+- `icon-512.png` (NUEVO - icono 512x512)
+- `generar-iconos.html` (NUEVO - herramienta para generar iconos)
 - `README.md` (este archivo)
+
+**📝 IMPORTANTE - Generar Iconos:**
+
+Si no tienes los archivos `icon-192.png` e `icon-512.png`:
+1. Abre el archivo `generar-iconos.html` en tu navegador
+2. Haz clic en "Descargar icon-192.png"
+3. Haz clic en "Descargar icon-512.png"
+4. Guarda ambos archivos en la misma carpeta que `index.html`
 
 ### Paso 2: Abrir el sistema según tu dispositivo
 
@@ -88,10 +101,71 @@ Al abrir el sistema, verás un indicador en la parte superior del encabezado:
 - Intenta cerrar y volver a abrir el navegador
 - Haz respaldos frecuentes usando "Exportar Datos"
 
-### Paso 4: Empezar a usar
+### Paso 4: Instalar como PWA (Progressive Web App) - RECOMENDADO
+
+**🎉 ¡Ahora puedes instalar la app como una aplicación nativa!**
+
+El sistema ahora es una **PWA completa** que puede:
+- ✅ Instalarse como app en tu teléfono/computadora
+- ✅ Funcionar **completamente offline** (sin internet)
+- ✅ Verse como una app real (sin barra del navegador)
+- ✅ Tener un ícono en tu pantalla de inicio/escritorio
+
+#### 📱 Instalar en Android (Chrome)
+
+1. Abre `index.html` en Chrome (en tu teléfono)
+2. Verás un **banner morado** en la parte inferior que dice "📱 Instala esta app para acceso rápido"
+3. Toca el botón **"Instalar Ahora"**
+4. Confirma la instalación en el diálogo que aparece
+5. ¡Listo! La app se instalará y aparecerá en tu pantalla de inicio
+6. Ábrela desde ahí - se verá como una app real (sin barra del navegador)
+
+**Si no aparece el banner:**
+- Toca el menú de Chrome (tres puntos) → "Instalar app" o "Agregar a pantalla de inicio"
+- Asegúrate de que tengas los archivos `manifest.json` y los iconos en la misma carpeta
+
+#### 🍎 Instalar en iPhone/iPad (Safari)
+
+1. Abre `index.html` en Safari (en tu iPhone)
+2. Toca el botón de **"Compartir"** (cuadrado con flecha hacia arriba) en la parte inferior
+3. Desplázate hacia abajo y toca **"Agregar a pantalla de inicio"**
+4. Toca **"Agregar"** en la esquina superior derecha
+5. ¡Listo! La app aparecerá en tu pantalla de inicio con un ícono
+6. Ábrela desde ahí - se verá como una app real (sin barra del navegador)
+
+**Nota:** En iPhone, el banner automático no aparece, pero puedes agregarla manualmente usando el botón de compartir.
+
+#### 💻 Instalar en Computadora (Chrome/Edge)
+
+1. Abre `index.html` en Chrome o Edge
+2. Verás un banner en la parte inferior que dice "📱 Instala esta app para acceso rápido"
+3. Haz clic en **"Instalar Ahora"**
+4. Confirma la instalación en el diálogo que aparece
+5. ¡Listo! La app se instalará y aparecerá como una aplicación independiente
+6. Ábrela desde el menú de inicio o escritorio - se abrirá en su propia ventana
+
+**Ventajas de instalarla:**
+- ✅ Se abre más rápido (archivos cacheados)
+- ✅ Funciona completamente offline
+- ✅ No tiene la barra del navegador (se ve como app real)
+- ✅ Tiene su propio ícono y nombre "Mi Contabilidad"
+
+#### 🔌 Funcionalidad Offline
+
+Una vez instalada, la PWA funciona **completamente sin internet**:
+
+- ✅ Puedes registrar ventas y gastos
+- ✅ Puedes ver todos tus datos
+- ✅ Puedes generar reportes
+- ✅ Puedes exportar PDFs
+- ✅ Todos los datos se guardan localmente
+
+**Nota:** La primera vez que abres la app, necesita internet para descargar las librerías de gráficas. Después, todo funciona offline.
+
+### Paso 5: Empezar a usar
 
 Una vez abierto el sistema, verás 4 pestañas principales:
-- **Dashboard:** Resumen general de tus finanzas
+- **Dashboard:** Resumen general de tus finanzas + botones grandes de Exportar/Importar
 - **Ventas:** Para registrar ventas
 - **Gastos:** Para registrar gastos
 - **Reportes:** Para ver análisis y gráficas
@@ -216,30 +290,83 @@ El sistema mostrará:
 
 ---
 
-### 💾 Respaldo de Datos
+### 💾 Respaldo de Datos - VERSIÓN MEJORADA
 
-#### Exportar (Hacer Respaldo)
+**🎉 Nuevo:** Ahora tienes botones **GRANDES y VISIBLES** en el Dashboard para exportar/importar.
 
-1. En la parte inferior de cualquier pestaña, verás la sección **"💾 Respaldo de Datos"**
-2. Haz clic en **"📥 Exportar Datos"**
-3. Se descargará un archivo JSON con todos tus datos
-4. **¡MUY IMPORTANTE!** Guarda este archivo en un lugar seguro:
+#### 📤 Exportar (Hacer Respaldo)
+
+1. Ve al **Dashboard** (primera pestaña)
+2. Verás la sección **"💾 Respaldo de Datos"** con dos botones grandes
+3. Haz clic en el botón grande **"📤 Exportar Datos"** (color morado)
+4. Se descargará un archivo con el nombre: `contabilidad-backup-FECHA.json`
+5. **¡MUY IMPORTANTE!** Guarda este archivo en un lugar seguro:
    - En otra carpeta de tu computadora
    - En una memoria USB
-   - En la nube (Google Drive, Dropbox, etc.)
+   - En la nube (Google Drive, Dropbox, WhatsApp, Email, etc.)
 
-**💡 Recomendación:** Haz respaldo al menos una vez por semana.
+**💡 Recomendación:** 
+- Haz respaldo al menos una vez por semana
+- El sistema te recordará automáticamente cada semana si no has hecho respaldo
 
-#### Importar (Restaurar Respaldo)
+**📋 Información del archivo:**
+- El archivo incluye todas tus ventas y gastos
+- Incluye la fecha de exportación
+- Puedes abrirlo con cualquier editor de texto para ver el contenido (es JSON)
 
-Si por alguna razón pierdes tus datos o quieres restaurar un respaldo anterior:
+#### 📥 Importar (Restaurar Respaldo)
 
-1. Haz clic en **"📤 Importar Datos"**
-2. Busca y selecciona el archivo JSON que exportaste anteriormente
-3. Confirma que quieres importar los datos
-4. Tus datos se restaurarán completamente
+Para usar tus datos en otro dispositivo o restaurar un respaldo:
 
-**⚠️ Advertencia:** Importar datos reemplazará todos los datos actuales. Asegúrate de tener un respaldo antes de importar.
+1. Ve al **Dashboard**
+2. Haz clic en el botón grande **"📥 Importar Datos"** (color rosa/rojo)
+3. Selecciona el archivo JSON que exportaste anteriormente
+4. **¡NUEVO!** Ahora te pregunta:
+   - **OK = REEMPLAZAR** todos los datos actuales (borra todo y pone los datos importados)
+   - **Cancelar = COMBINAR** con los datos actuales (agrega los datos importados sin duplicar)
+5. Tus datos se importarán y verás un mensaje de confirmación
+
+**💡 Opciones de Importación:**
+
+- **REEMPLAZAR:** Úsalo cuando quieres restaurar un respaldo o empezar desde cero con datos específicos
+- **COMBINAR:** Úsalo cuando quieres agregar datos de otro dispositivo sin perder los actuales (evita duplicados automáticamente)
+
+**⚠️ Advertencia:** 
+- Reemplazar borra todos los datos actuales
+- Siempre haz un respaldo antes de importar, por si acaso
+
+#### 🔄 Compartir Datos Entre Dispositivos
+
+**Problema resuelto:** Ahora puedes usar los mismos datos en todos tus dispositivos.
+
+**Pasos:**
+
+1. **En dispositivo A (ej: tu computadora):**
+   - Abre la app
+   - Ve al Dashboard
+   - Toca "📤 Exportar Datos"
+   - El archivo `contabilidad-backup-FECHA.json` se descargará
+
+2. **Transferir el archivo:**
+   - Envíalo por WhatsApp a tu teléfono
+   - Sube a Google Drive y descárgalo en el otro dispositivo
+   - Envíalo por Email
+   - Usa cualquier método que prefieras
+
+3. **En dispositivo B (ej: tu teléfono):**
+   - Instala la app (sigue las instrucciones de instalación PWA)
+   - Abre la app
+   - Ve al Dashboard
+   - Toca "📥 Importar Datos"
+   - Selecciona el archivo que descargaste/recibiste
+   - Elige "REEMPLAZAR" para tener los mismos datos, o "COMBINAR" para agregar
+
+4. **¡Listo!** Tus datos están ahora en ambos dispositivos.
+
+**💡 Tips:**
+- Puedes usar el mismo archivo en múltiples dispositivos
+- Si usas "COMBINAR", puedes juntar datos de varios dispositivos
+- Haz respaldos frecuentes en todos tus dispositivos
 
 ---
 
@@ -331,14 +458,33 @@ Tus datos se guardan **localmente en tu dispositivo** usando IndexedDB y localSt
 
 ### ¿Puedo usar esto en múltiples dispositivos?
 
-Cada dispositivo guarda sus propios datos. Si quieres usar los mismos datos en otra computadora o teléfono:
-1. Exporta los datos en el primer dispositivo
-2. Copia el archivo JSON al segundo dispositivo
-3. Importa los datos en el segundo dispositivo
+**¡Sí!** Ahora puedes usar los mismos datos en todos tus dispositivos fácilmente:
+
+1. **Exporta** los datos en el primer dispositivo (Dashboard → "📤 Exportar Datos")
+2. **Transfiere** el archivo JSON al segundo dispositivo (WhatsApp, Google Drive, Email, etc.)
+3. **Importa** los datos en el segundo dispositivo (Dashboard → "📥 Importar Datos")
+4. **Elige** si quieres REEMPLAZAR (mismos datos) o COMBINAR (unir datos de ambos)
+
+**💡 Recomendación:** 
+- Haz respaldos frecuentes en cada dispositivo
+- Usa la misma carpeta en Google Drive para tener acceso fácil desde todos tus dispositivos
 
 ### ¿Necesito internet para usar el sistema?
 
-**Solo la primera vez.** Necesitas internet cuando abres el sistema por primera vez porque carga las librerías de gráficas y PDF desde internet. Una vez cargadas, puedes usar el sistema sin internet (pero es mejor tener internet para que las gráficas funcionen correctamente).
+**¡NO!** Si instalas la app como PWA, funciona **completamente offline**:
+
+- ✅ Puedes registrar ventas y gastos sin internet
+- ✅ Puedes ver todos tus datos sin internet
+- ✅ Puedes generar reportes sin internet
+- ✅ Puedes exportar PDFs sin internet (una vez instalada)
+
+**Primera vez:**
+- Necesitas internet la primera vez para que la PWA se instale y descargue todos los archivos
+- Después de instalar, todo funciona offline
+
+**Si NO instalas la PWA:**
+- Necesitas internet cada vez para cargar las librerías de gráficas
+- Funciona pero es más lento
 
 ### ¿Qué significa el indicador de estado?
 
@@ -384,6 +530,23 @@ Simplemente reemplaza los archivos `index.html`, `estilos.css` y `app.js` con lo
 - ✅ Indicador visual de estado (verde/amarillo/rojo)
 - ✅ Detección de modo incógnito y permisos bloqueados
 - ✅ Mensajes de error claros si hay problemas
+
+#### PWA - Progressive Web App (NUEVO)
+- ✅ Instalable como app nativa en Android, iPhone y computadora
+- ✅ Funciona completamente offline (sin internet)
+- ✅ Service Worker para cachear todos los archivos
+- ✅ Banner de instalación automático
+- ✅ Iconos personalizados para la app
+- ✅ Se abre en ventana propia (sin barra del navegador)
+- ✅ Recordatorio automático de respaldos semanales
+
+#### Respaldo y Sincronización Mejorados (NUEVO)
+- ✅ Botones grandes y visibles de Exportar/Importar en Dashboard
+- ✅ Exportar con nombre con fecha: `contabilidad-backup-FECHA.json`
+- ✅ Importar con opción de REEMPLAZAR o COMBINAR datos
+- ✅ Validación de archivos JSON
+- ✅ Prevención de duplicados al combinar
+- ✅ Instrucciones claras sobre cómo compartir entre dispositivos
 
 #### Respaldo y Administración (NUEVO)
 - ✅ Sistema de respaldo (exportar/importar datos)

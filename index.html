@@ -3,10 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Iconos de Apple -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Meta tags PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Mi Contabilidad">
     <meta name="theme-color" content="#2563eb">
-    <title>Sistema de Contabilidad - Mi Negocio</title>
+    <meta name="description" content="Sistema de contabilidad para mi negocio">
+    
+    <title>Mi Contabilidad</title>
     <link rel="stylesheet" href="estilos.css">
     <!-- CDN para generar PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -14,6 +25,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- Banner de instalación PWA -->
+    <div id="install-banner" class="install-banner" style="display: none;">
+        <p>📱 Instala esta app para acceso rápido</p>
+        <div class="install-buttons">
+            <button id="install-button">Instalar Ahora</button>
+            <button id="install-dismiss">Ahora no</button>
+        </div>
+    </div>
+
     <!-- Contenedor principal -->
     <div class="container">
         <!-- Encabezado -->
@@ -90,6 +110,20 @@
                 <h3>Últimas Transacciones</h3>
                 <div id="transacciones-recientes" class="transactions-list">
                     <p class="no-data">No hay transacciones registradas aún</p>
+                </div>
+            </div>
+
+            <!-- Botones de Respaldo Mejorados -->
+            <div class="backup-section-dashboard">
+                <h3>💾 Respaldo de Datos</h3>
+                <p class="backup-instructions">Para usar en otro dispositivo, exporta tus datos y luego impórtalos en el otro dispositivo.</p>
+                <div class="backup-buttons">
+                    <button class="backup-btn export-btn" onclick="exportarDatosMejorado()">
+                        📤 Exportar Datos
+                    </button>
+                    <button class="backup-btn import-btn" onclick="importarDatosMejorado()">
+                        📥 Importar Datos
+                    </button>
                 </div>
             </div>
         </section>
@@ -335,14 +369,18 @@
             </div>
         </section>
 
-        <!-- Sección de respaldo -->
+        <!-- Sección de respaldo (mantener para compatibilidad) -->
         <div class="backup-section">
-            <h3>💾 Respaldo de Datos</h3>
+            <h3>💾 Respaldo de Datos (Versión Completa)</h3>
             <div class="backup-buttons">
-                <button class="btn btn-success" onclick="exportarDatos()">📥 Exportar Datos</button>
-                <button class="btn btn-warning" onclick="importarDatos()">📤 Importar Datos</button>
-                <input type="file" id="file-input" accept=".json" style="display: none;" onchange="cargarDatosImportados(event)">
+                <button class="backup-btn export-btn" onclick="exportarDatosMejorado()">
+                    📤 Exportar Datos
+                </button>
+                <button class="backup-btn import-btn" onclick="importarDatosMejorado()">
+                    📥 Importar Datos
+                </button>
             </div>
+            <input type="file" id="file-input" accept=".json" style="display: none;" onchange="cargarDatosImportadosMejorado(event)">
         </div>
         
         <!-- Sección de borrar todo -->

@@ -24,12 +24,53 @@ let storageStatus = {
 };
 
 // ============================================
+// PWA - INSTALACIÓN Y SERVICE WORKER
+// ============================================
+
+let deferredPrompt;
+
+// Detectar evento de instalación PWA
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Mostrar banner de instalación
+    const installBanner = document.getElementById('install-banner');
+    if (installBanner && !window.matchMedia('(display-mode: standalone)').matches) {
+        // Solo mostrar si no está ya instalada
+        installBanner.style.display = 'flex';
+    }
+});
+
+// Registrar Service Worker para funcionalidad offline
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => {
+                console.log('✅ Service Worker registrado:', reg.scope);
+                
+                // Verificar actualizaciones cada hora
+                setInterval(() => {
+                    reg.update();
+                }, 3600000);
+            })
+            .catch(err => console.error('❌ Error al registrar Service Worker:', err));
+    });
+}
+
+// Detectar si la app ya está instalada
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('✅ App ejecutándose en modo standalone (instalada)');
+}
+
+// ============================================
 // INICIALIZACIÓN
 // ============================================
 
 // Cuando se carga la página, inicializar todo
 document.addEventListener('DOMContentLoaded', function() {
     inicializarApp();
+    configurarInstalacionPWA();
 });
 
 async function inicializarApp() {
@@ -64,6 +105,9 @@ async function inicializarApp() {
     
     // Actualizar indicador de estado
     actualizarIndicadorEstado();
+    
+    // Verificar recordatorio de respaldo semanal
+    verificarRecordatorioRespaldo();
 }
 
 // ============================================
@@ -1178,59 +1222,251 @@ function exportarPDF() {
 }
 
 // ============================================
+// CONFIGURACIÓN DE INSTALACIÓN PWA
+// ============================================
+
+function configurarInstalacionPWA() {
+    const installButton = document.getElementById('install-button');
+    const installDismiss = document.getElementById('install-dismiss');
+    
+    if (installButton) {
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Instalación: ${outcome}`);
+                
+                if (outcome === 'accepted') {
+                    mostrarMensaje('✅ ¡App instalada! Ahora puedes abrirla desde tu pantalla de inicio.', 'success');
+                }
+                
+                deferredPrompt = null;
+                const installBanner = document.getElementById('install-banner');
+                if (installBanner) {
+                    installBanner.style.display = 'none';
+                }
+            } else {
+                // Fallback para iOS/Safari
+                mostrarMensaje('💡 En iPhone: Toca el botón compartir → "Agregar a pantalla de inicio"', 'info');
+            }
+        });
+    }
+    
+    if (installDismiss) {
+        installDismiss.addEventListener('click', () => {
+            const installBanner = document.getElementById('install-banner');
+            if (installBanner) {
+                installBanner.style.display = 'none';
+            }
+            // Guardar preferencia para no mostrar por 7 días
+            localStorage.setItem('pwa_dismissed', Date.now().toString());
+        });
+    }
+    
+    // No mostrar banner si fue descartado recientemente
+    const dismissed = localStorage.getItem('pwa_dismissed');
+    if (dismissed) {
+        const dismissedTime = parseInt(dismissed);
+        const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+        if (daysSinceDismissed < 7) {
+            const installBanner = document.getElementById('install-banner');
+            if (installBanner) {
+                installBanner.style.display = 'none';
+            }
+        }
+    }
+}
+
+// ============================================
+// RECORDATORIO DE RESPALDO SEMANAL
+// ============================================
+
+function verificarRecordatorioRespaldo() {
+    const lastBackupReminder = localStorage.getItem('last_backup_reminder');
+    const now = Date.now();
+    const weekInMs = 7 * 24 * 60 * 60 * 1000;
+    
+    if (!lastBackupReminder || (now - parseInt(lastBackupReminder)) > weekInMs) {
+        setTimeout(() => {
+            if (confirm('💾 ¿Hiciste un respaldo de tus datos esta semana?\n\nSe recomienda hacer respaldos semanales para proteger tu información.\n\n¿Quieres exportar tus datos ahora?')) {
+                exportarDatosMejorado();
+            }
+            localStorage.setItem('last_backup_reminder', now.toString());
+        }, 2000); // Mostrar después de 2 segundos
+    }
+}
+
+// ============================================
 // EXPORTAR/IMPORTAR DATOS
 // ============================================
 
 function exportarDatos() {
-    const datos = {
-        ventas: ventas,
-        gastos: gastos,
-        fechaExportacion: new Date().toISOString()
-    };
-    
-    const datosJSON = JSON.stringify(datos, null, 2);
-    const blob = new Blob([datosJSON], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `respaldo-contabilidad-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    mostrarMensaje('✅ Datos exportados correctamente');
+    // Mantener compatibilidad con versión anterior
+    exportarDatosMejorado();
 }
 
 function importarDatos() {
-    document.getElementById('file-input').click();
+    // Mantener compatibilidad con versión anterior
+    importarDatosMejorado();
+}
+
+function exportarDatosMejorado() {
+    try {
+        const datos = {
+            ventas: ventas,
+            gastos: gastos,
+            exportadoEn: new Date().toISOString(),
+            version: '2.0',
+            totalVentas: ventas.length,
+            totalGastos: gastos.length
+        };
+        
+        const json = JSON.stringify(datos, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const fecha = new Date().toISOString().split('T')[0];
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `contabilidad-backup-${fecha}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        
+        mostrarMensaje('✅ Respaldo descargado. Guárdalo en un lugar seguro.', 'success');
+        
+        // Actualizar último recordatorio
+        localStorage.setItem('last_backup_reminder', Date.now().toString());
+        
+        // Mostrar instrucciones después de un momento
+        setTimeout(() => {
+            alert('💡 IMPORTANTE:\n\n' +
+                  '1. Este archivo contiene TODOS tus datos\n' +
+                  '2. Guárdalo en un lugar seguro (Google Drive, Dropbox, etc.)\n' +
+                  '3. Para usar en otro dispositivo: abre la app ahí y usa "Importar Datos"\n' +
+                  '4. Se recomienda hacer respaldo cada semana');
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error al exportar:', error);
+        mostrarMensaje('❌ Error al exportar datos', 'error');
+    }
+}
+
+function importarDatosMejorado() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const datos = JSON.parse(text);
+            
+            // Validar datos
+            if (!datos.ventas || !Array.isArray(datos.ventas) || 
+                !datos.gastos || !Array.isArray(datos.gastos)) {
+                throw new Error('Archivo inválido: formato incorrecto');
+            }
+            
+            // Preguntar si reemplazar o combinar
+            const opcion = confirm(
+                '¿Cómo quieres importar los datos?\n\n' +
+                'OK = REEMPLAZAR todos los datos actuales\n' +
+                'Cancelar = COMBINAR con los datos actuales\n\n' +
+                `El archivo contiene: ${datos.ventas.length} ventas y ${datos.gastos.length} gastos`
+            );
+            
+            if (opcion) {
+                // Reemplazar
+                ventas = datos.ventas;
+                gastos = datos.gastos;
+                mostrarMensaje('✅ Datos reemplazados completamente', 'success');
+            } else {
+                // Combinar (evitar duplicados por ID si existen)
+                const ventasIds = new Set(ventas.map(v => v.id));
+                const gastosIds = new Set(gastos.map(g => g.id));
+                
+                const nuevasVentas = datos.ventas.filter(v => !ventasIds.has(v.id));
+                const nuevosGastos = datos.gastos.filter(g => !gastosIds.has(g.id));
+                
+                ventas = [...ventas, ...nuevasVentas];
+                gastos = [...gastos, ...nuevosGastos];
+                
+                mostrarMensaje(
+                    `✅ Datos combinados: ${nuevasVentas.length} ventas y ${nuevosGastos.length} gastos agregados`,
+                    'success'
+                );
+            }
+            
+            // Guardar
+            await guardarVentas();
+            await guardarGastos();
+            
+            // Actualizar vista
+            actualizarDashboard();
+            mostrarVentas();
+            mostrarGastos();
+            
+        } catch (error) {
+            console.error('Error al importar:', error);
+            mostrarMensaje('❌ Error al importar. Verifica que el archivo sea correcto: ' + error.message, 'error');
+        }
+    };
+    
+    input.click();
 }
 
 async function cargarDatosImportados(event) {
+    // Mantener compatibilidad con función anterior
     const file = event.target.files[0];
     if (!file) return;
     
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const datos = JSON.parse(e.target.result);
-            
-            if (confirm('¿Estás seguro de que quieres importar estos datos? Se reemplazarán los datos actuales.')) {
-                if (datos.ventas) ventas = datos.ventas;
-                if (datos.gastos) gastos = datos.gastos;
-                
-                await guardarVentas();
-                await guardarGastos();
-                
-                actualizarDashboard();
-                mostrarVentas();
-                mostrarGastos();
-                
-                mostrarMensaje('✅ Datos importados correctamente');
-            }
-        } catch (error) {
-            mostrarMensaje('❌ Error al importar datos. Verifica que el archivo sea válido.', 'error');
+    try {
+        const text = await file.text();
+        const datos = JSON.parse(text);
+        
+        if (!datos.ventas || !Array.isArray(datos.ventas) || 
+            !datos.gastos || !Array.isArray(datos.gastos)) {
+            throw new Error('Archivo inválido');
         }
-    };
-    reader.readAsText(file);
+        
+        const opcion = confirm(
+            '¿Cómo quieres importar los datos?\n\n' +
+            'OK = REEMPLAZAR todos los datos actuales\n' +
+            'Cancelar = COMBINAR con los datos actuales'
+        );
+        
+        if (opcion) {
+            ventas = datos.ventas;
+            gastos = datos.gastos;
+        } else {
+            const ventasIds = new Set(ventas.map(v => v.id));
+            const gastosIds = new Set(gastos.map(g => g.id));
+            
+            const nuevasVentas = datos.ventas.filter(v => !ventasIds.has(v.id));
+            const nuevosGastos = datos.gastos.filter(g => !gastosIds.has(g.id));
+            
+            ventas = [...ventas, ...nuevasVentas];
+            gastos = [...gastos, ...nuevosGastos];
+        }
+        
+        await guardarVentas();
+        await guardarGastos();
+        
+        actualizarDashboard();
+        mostrarVentas();
+        mostrarGastos();
+        
+        mostrarMensaje(`✅ Datos importados: ${datos.ventas.length} ventas, ${datos.gastos.length} gastos`, 'success');
+        
+    } catch (error) {
+        console.error('Error al importar:', error);
+        mostrarMensaje('❌ Error al importar. Verifica que el archivo sea correcto.', 'error');
+    }
 }
 
 // ============================================
@@ -1287,5 +1523,8 @@ window.generarReporte = generarReporte;
 window.exportarPDF = exportarPDF;
 window.exportarDatos = exportarDatos;
 window.importarDatos = importarDatos;
+window.exportarDatosMejorado = exportarDatosMejorado;
+window.importarDatosMejorado = importarDatosMejorado;
 window.cargarDatosImportados = cargarDatosImportados;
+window.cargarDatosImportadosMejorado = cargarDatosImportados;
 
