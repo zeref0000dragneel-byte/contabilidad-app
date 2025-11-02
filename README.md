@@ -24,7 +24,9 @@ Asegúrate de tener estos 4 archivos en una misma carpeta:
 - `app.js`
 - `README.md` (este archivo)
 
-### Paso 2: Abrir el sistema
+### Paso 2: Abrir el sistema según tu dispositivo
+
+#### En Computadora (Windows, Mac, Linux)
 
 1. Abre tu navegador web (Chrome, Firefox, Edge, etc.)
 2. Presiona `Ctrl + O` (o `Cmd + O` en Mac) para abrir un archivo
@@ -33,7 +35,60 @@ Asegúrate de tener estos 4 archivos en una misma carpeta:
 
 **Alternativa:** También puedes hacer doble clic en el archivo `index.html` y se abrirá automáticamente.
 
-### Paso 3: Empezar a usar
+#### En Android (Teléfono/Tablet)
+
+1. **Preparar los archivos:**
+   - Copia la carpeta completa con todos los archivos a tu teléfono
+   - Puedes usar USB, Google Drive, Dropbox, o cualquier método que prefieras
+
+2. **Abrir en Chrome:**
+   - Abre la aplicación "Chrome" en tu teléfono
+   - Ve a la ubicación donde copiaste los archivos
+   - Toca en el archivo `index.html`
+   - El sistema se abrirá en Chrome
+
+3. **Agregar a pantalla de inicio (Recomendado):**
+   - Una vez abierto el sistema, toca el menú (tres puntos) en Chrome
+   - Selecciona "Agregar a pantalla de inicio" o "Instalar app"
+   - Dale un nombre si quieres (ej: "Mi Contabilidad")
+   - Ahora tendrás un ícono en tu pantalla de inicio
+   - Cada vez que toques el ícono, el sistema se abrirá como una app
+
+#### En iPhone/iPad
+
+1. **Preparar los archivos:**
+   - Copia la carpeta completa con todos los archivos a tu dispositivo
+   - Usa iCloud Drive, AirDrop, o cualquier método
+
+2. **Abrir en Safari:**
+   - Abre la aplicación "Safari" (el navegador nativo)
+   - Usa el app "Archivos" para navegar a donde copiaste los archivos
+   - Toca en el archivo `index.html`
+   - El sistema se abrirá en Safari
+
+3. **Agregar a pantalla de inicio (Recomendado):**
+   - En la parte inferior de Safari, toca el botón de compartir (cuadrado con flecha)
+   - Desplázate y toca "Añadir a pantalla de inicio"
+   - Dale un nombre si quieres (ej: "Mi Contabilidad")
+   - Toca "Añadir"
+   - Ahora tendrás un ícono en tu pantalla de inicio
+   - Cada vez que toques el ícono, el sistema se abrirá como una app
+
+### Paso 3: Verificar que el almacenamiento funciona
+
+Al abrir el sistema, verás un indicador en la parte superior del encabezado:
+
+- **✅ Datos guardados correctamente** - Verde = Todo funciona perfecto
+- **⚠️ Usando respaldo (localStorage)** - Amarillo = Funciona pero con respaldo alternativo
+- **❌ Error: No se pueden guardar datos** - Rojo = Problemas de almacenamiento
+
+**Si ves el indicador rojo:**
+- En móviles: Verifica que no estés en modo incógnito
+- Verifica los permisos de almacenamiento del navegador
+- Intenta cerrar y volver a abrir el navegador
+- Haz respaldos frecuentes usando "Exportar Datos"
+
+### Paso 4: Empezar a usar
 
 Una vez abierto el sistema, verás 4 pestañas principales:
 - **Dashboard:** Resumen general de tus finanzas
@@ -202,6 +257,26 @@ Si te equivocaste al registrar algo:
 
 ---
 
+### 🗑️ Borrar Todos los Datos (Nueva Función)
+
+Si quieres empezar desde cero o cambiar de período:
+
+1. Ve a la sección **"🗑️ Administración de Datos"** en la parte inferior
+2. Haz clic en **"🗑️ Borrar Todos los Datos"**
+3. Confirma la primera advertencia
+4. Confirma la segunda advertencia
+5. Escribe **"CONFIRMAR"** en el último mensaje
+6. Todos los datos serán eliminados permanentemente
+
+**⚠️ ADVERTENCIA CRÍTICA:** Esta acción NO SE PUEDE DESHACER. Asegúrate de exportar tus datos antes de borrar todo.
+
+**💡 Casos de uso:**
+- Empezar un nuevo período contable (año, mes, trimestre)
+- Limpiar datos de prueba
+- Resolver problemas de almacenamiento corrupto
+
+---
+
 ### 🔍 Filtrar Registros
 
 #### Filtrar Ventas
@@ -226,36 +301,62 @@ Si te equivocaste al registrar algo:
 
 ### ¿Mis datos se guardan automáticamente?
 
-**Sí.** Cada vez que registras una venta o gasto, se guarda automáticamente en el navegador. No necesitas hacer nada especial para guardar.
+**Sí.** Cada vez que registras una venta o gasto, se guarda automáticamente en el navegador. El sistema usa IndexedDB (más confiable) con respaldo en localStorage. Verás un indicador verde si todo funciona correctamente.
 
 ### ¿Qué pasa si cierro el navegador?
 
-Tus datos siguen guardados. Cuando vuelvas a abrir el archivo `index.html`, todos tus datos seguirán ahí.
+Tus datos siguen guardados. Cuando vuelvas a abrir el archivo `index.html`, todos tus datos seguirán ahí. El sistema guarda en dos lugares diferentes para mayor confiabilidad.
 
 ### ¿Mis datos están seguros?
 
-Tus datos se guardan **localmente en tu computadora** usando una tecnología llamada "localStorage". Esto significa:
+Tus datos se guardan **localmente en tu dispositivo** usando IndexedDB y localStorage. Esto significa:
 - ✅ Solo tú tienes acceso a tus datos
 - ✅ No se envían a ningún servidor
 - ✅ No se comparten con nadie
 - ⚠️ Si borras el historial del navegador, podrías perder los datos (por eso es importante hacer respaldos)
 
-### ¿Puedo usar esto en múltiples computadoras?
+### ¿Funciona en teléfonos móviles?
 
-Cada computadora guarda sus propios datos. Si quieres usar los mismos datos en otra computadora:
-1. Exporta los datos en la primera computadora
-2. Copia el archivo JSON a la segunda computadora
-3. Importa los datos en la segunda computadora
+**¡Sí, ahora funciona perfectamente!** El sistema está completamente optimizado para móviles:
+- Diseño responsive que se adapta a pantallas pequeñas
+- IndexedDB funciona mejor que localStorage en móviles
+- Puedes agregarlo a tu pantalla de inicio como una app
+- Funciona en Android (Chrome) y iPhone/iPad (Safari)
 
-### ¿Funciona en celular?
+**Si en tu teléfono no guarda datos:**
+1. Verifica que NO estés en modo incógnito
+2. Asegúrate de usar Chrome (Android) o Safari (iPhone)
+3. Revisa el indicador de estado en la parte superior
+4. Haz respaldos frecuentes con "Exportar Datos"
 
-**Sí.** El sistema está diseñado para funcionar en computadoras, tablets y celulares. Solo necesitas abrir el archivo `index.html` en el navegador del celular.
+### ¿Puedo usar esto en múltiples dispositivos?
+
+Cada dispositivo guarda sus propios datos. Si quieres usar los mismos datos en otra computadora o teléfono:
+1. Exporta los datos en el primer dispositivo
+2. Copia el archivo JSON al segundo dispositivo
+3. Importa los datos en el segundo dispositivo
 
 ### ¿Necesito internet para usar el sistema?
 
 **Solo la primera vez.** Necesitas internet cuando abres el sistema por primera vez porque carga las librerías de gráficas y PDF desde internet. Una vez cargadas, puedes usar el sistema sin internet (pero es mejor tener internet para que las gráficas funcionen correctamente).
 
-### ¿Cómo actualizo el sistema si me das una nueva versión?
+### ¿Qué significa el indicador de estado?
+
+En la parte superior verás un indicador que muestra el estado del almacenamiento:
+
+- **✅ Verde:** IndexedDB funcionando perfectamente, guardado confiable
+- **⚠️ Amarillo:** Usando localStorage como respaldo, funciona pero menos óptimo
+- **❌ Rojo:** Problemas con el almacenamiento, haz respaldos frecuentes
+
+### ¿Qué hacer si veo el indicador rojo?
+
+1. En móviles, verifica que NO estés en modo incógnito
+2. Cierra y vuelve a abrir el navegador
+3. Verifica los permisos de almacenamiento
+4. Haz un respaldo inmediato con "Exportar Datos"
+5. Intenta hacer algunas operaciones para ver si funciona
+
+### ¿Cómo actualizo el sistema si hay una nueva versión?
 
 Simplemente reemplaza los archivos `index.html`, `estilos.css` y `app.js` con los nuevos. **IMPORTANTE:** Antes de reemplazar, exporta tus datos como respaldo por si acaso.
 
@@ -265,6 +366,7 @@ Simplemente reemplaza los archivos `index.html`, `estilos.css` y `app.js` con lo
 
 ### ✅ Funcionalidades Implementadas
 
+#### Funcionalidades Básicas
 - ✅ Registro de ventas con todos los campos solicitados
 - ✅ Registro de gastos por categorías
 - ✅ Cálculo automático de saldos (día, semana, mes, total)
@@ -275,11 +377,27 @@ Simplemente reemplaza los archivos `index.html`, `estilos.css` y `app.js` con lo
 - ✅ Productos más vendidos
 - ✅ Comparativa mensual
 - ✅ Exportación a PDF
+
+#### Sistema de Almacenamiento (NUEVO)
+- ✅ IndexedDB como almacenamiento principal (más confiable en móviles)
+- ✅ localStorage como respaldo automático
+- ✅ Indicador visual de estado (verde/amarillo/rojo)
+- ✅ Detección de modo incógnito y permisos bloqueados
+- ✅ Mensajes de error claros si hay problemas
+
+#### Respaldo y Administración (NUEVO)
 - ✅ Sistema de respaldo (exportar/importar datos)
+- ✅ Botón "Borrar Todos los Datos" con confirmación triple
+- ✅ Validación de archivos JSON en importación
+- ✅ Respaldo dual automático (IndexedDB + localStorage)
+
+#### Interfaz y Experiencia (NUEVO)
 - ✅ Validación de formularios
 - ✅ Confirmaciones antes de eliminar
 - ✅ Diseño responsive (funciona en móviles)
 - ✅ Mensajes de confirmación
+- ✅ Meta tags para PWA (agregar a pantalla de inicio)
+- ✅ Compatible con navegadores antiguos
 
 ### 🎨 Diseño
 
@@ -299,7 +417,55 @@ Simplemente reemplaza los archivos `index.html`, `estilos.css` y `app.js` con lo
 
 ---
 
-## 📞 Soporte
+## 📞 Soporte y Solución de Problemas
+
+### Problemas Comunes y Soluciones
+
+#### 1. "No guarda datos en mi teléfono"
+
+**Solución:**
+- Verifica que NO estés en modo incógnito
+- Usa Chrome en Android o Safari en iPhone
+- Comprueba el indicador de estado en la parte superior
+- Haz respaldos frecuentes con "Exportar Datos"
+
+#### 2. "Veo el indicador rojo ❌"
+
+**Solución:**
+- En móviles, sal de modo incógnito
+- Cierra y vuelve a abrir el navegador
+- Verifica los permisos de almacenamiento
+- Haz un respaldo inmediato con "Exportar Datos"
+
+#### 3. "Perdí todos mis datos"
+
+**Solución:**
+- Si hiciste respaldos, usa "Importar Datos"
+- Si compartes con otros dispositivos, exporta e importa
+- Para evitar esto, haz respaldos semanales
+
+#### 4. "Las gráficas no se ven"
+
+**Solución:**
+- Verifica que tengas conexión a internet
+- Cierra y vuelve a abrir la pestaña "Reportes"
+- Intenta en otro navegador
+
+#### 5. "No puedo abrir el archivo en mi teléfono"
+
+**Solución:**
+- En Android: Usa un administrador de archivos (Google Files)
+- En iPhone: Usa el app "Archivos" de Apple
+- Asegúrate de tener todos los archivos juntos
+
+#### 6. "Al copiar los archivos, no funciona"
+
+**Solución:**
+- Copia TODA la carpeta, no solo algunos archivos
+- Mantén juntos: index.html, app.js, estilos.css
+- En móviles, no los separes en subcarpetas
+
+### Contacto para Soporte
 
 Si encuentras algún problema o tienes preguntas:
 
@@ -307,6 +473,7 @@ Si encuentras algún problema o tienes preguntas:
 2. **Abre el archivo en un navegador moderno** (Chrome o Firefox recomendados)
 3. **Revisa que tengas internet** la primera vez que abres el sistema
 4. **Verifica la consola del navegador** (F12) si hay errores
+5. **Lee las preguntas frecuentes** en la sección anterior
 
 ---
 

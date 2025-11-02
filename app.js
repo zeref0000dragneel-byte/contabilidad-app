@@ -6,9 +6,22 @@
 let ventas = [];
 let gastos = [];
 
-// Claves para localStorage
+// Configuración de almacenamiento
+const DB_NAME = 'ContabilidadDB';
+const DB_VERSION = 1;
+const STORE_VENTAS = 'ventas';
+const STORE_GASTOS = 'gastos';
+
+// Claves para localStorage (respaldo)
 const STORAGE_VENTAS = 'contabilidad_ventas';
 const STORAGE_GASTOS = 'contabilidad_gastos';
+
+// Estado del almacenamiento
+let storageStatus = {
+    indexedDB: false,
+    localStorage: false,
+    mode: 'unknown'
+};
 
 // ============================================
 // INICIALIZACIÓN
@@ -19,15 +32,21 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarApp();
 });
 
-function inicializarApp() {
+async function inicializarApp() {
+    // Inicializar almacenamiento
+    await inicializarAlmacenamiento();
+    
     // Cargar datos guardados
-    cargarDatos();
+    await cargarDatos();
     
     // Configurar navegación de tabs
     configurarNavegacion();
     
     // Configurar formularios
     configurarFormularios();
+    
+    // Configurar botón de borrar todo
+    configurarBorrarTodo();
     
     // Mostrar datos iniciales
     actualizarDashboard();
@@ -42,14 +61,125 @@ function inicializarApp() {
     // Calcular total automáticamente cuando cambia cantidad o precio
     document.getElementById('venta-cantidad').addEventListener('input', calcularTotalVenta);
     document.getElementById('venta-precio').addEventListener('input', calcularTotalVenta);
+    
+    // Actualizar indicador de estado
+    actualizarIndicadorEstado();
 }
 
 // ============================================
-// GESTIÓN DE DATOS (localStorage)
+// GESTIÓN DE ALMACENAMIENTO (IndexedDB + localStorage)
 // ============================================
 
-// Cargar datos del almacenamiento local
-function cargarDatos() {
+// Inicializar el sistema de almacenamiento
+async function inicializarAlmacenamiento() {
+    // Verificar IndexedDB
+    if (window.indexedDB) {
+        try {
+            const db = await abrirIndexedDB();
+            if (db) {
+                storageStatus.indexedDB = true;
+                storageStatus.mode = 'indexeddb';
+                console.log('✅ IndexedDB disponible y funcionando');
+            }
+        } catch (error) {
+            console.warn('⚠️ Error al inicializar IndexedDB:', error);
+        }
+    }
+    
+    // Verificar localStorage
+    try {
+        localStorage.setItem('__test__', 'test');
+        localStorage.removeItem('__test__');
+        storageStatus.localStorage = true;
+        if (storageStatus.mode === 'unknown') {
+            storageStatus.mode = 'localstorage';
+        }
+        console.log('✅ localStorage disponible y funcionando');
+    } catch (error) {
+        console.error('❌ localStorage no disponible:', error);
+    }
+}
+
+// Abrir conexión a IndexedDB
+function abrirIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => {
+            console.error('Error al abrir IndexedDB:', request.error);
+            reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Crear stores si no existen
+            if (!db.objectStoreNames.contains(STORE_VENTAS)) {
+                db.createObjectStore(STORE_VENTAS, { keyPath: 'id', autoIncrement: false });
+            }
+            if (!db.objectStoreNames.contains(STORE_GASTOS)) {
+                db.createObjectStore(STORE_GASTOS, { keyPath: 'id', autoIncrement: false });
+            }
+        };
+    });
+}
+
+// Obtener objeto de store de IndexedDB
+function obtenerObjectStore(db, storeName, mode) {
+    const transaction = db.transaction([storeName], mode);
+    return transaction.objectStore(storeName);
+}
+
+// Cargar datos del almacenamiento
+async function cargarDatos() {
+    try {
+        if (storageStatus.indexedDB) {
+            await cargarDesdeIndexedDB();
+        } else if (storageStatus.localStorage) {
+            cargarDesdeLocalStorage();
+        } else {
+            console.error('❌ No hay almacenamiento disponible');
+            ventas = [];
+            gastos = [];
+        }
+    } catch (error) {
+        console.error('Error al cargar datos:', error);
+        // Intentar cargar desde localStorage como respaldo
+        if (storageStatus.localStorage) {
+            cargarDesdeLocalStorage();
+        }
+    }
+}
+
+// Cargar desde IndexedDB
+async function cargarDesdeIndexedDB() {
+    const db = await abrirIndexedDB();
+    
+    // Cargar ventas
+    const ventasStore = obtenerObjectStore(db, STORE_VENTAS, 'readonly');
+    const ventasRequest = ventasStore.getAll();
+    ventas = await new Promise((resolve) => {
+        ventasRequest.onsuccess = () => resolve(ventasRequest.result || []);
+        ventasRequest.onerror = () => resolve([]);
+    });
+    
+    // Cargar gastos
+    const gastosStore = obtenerObjectStore(db, STORE_GASTOS, 'readonly');
+    const gastosRequest = gastosStore.getAll();
+    gastos = await new Promise((resolve) => {
+        gastosRequest.onsuccess = () => resolve(gastosRequest.result || []);
+        gastosRequest.onerror = () => resolve([]);
+    });
+    
+    console.log(`✅ Datos cargados desde IndexedDB: ${ventas.length} ventas, ${gastos.length} gastos`);
+}
+
+// Cargar desde localStorage
+function cargarDesdeLocalStorage() {
     const ventasGuardadas = localStorage.getItem(STORAGE_VENTAS);
     const gastosGuardados = localStorage.getItem(STORAGE_GASTOS);
     
@@ -64,15 +194,99 @@ function cargarDatos() {
     } else {
         gastos = [];
     }
+    
+    console.log(`✅ Datos cargados desde localStorage: ${ventas.length} ventas, ${gastos.length} gastos`);
+}
+
+// Guardar ventas
+async function guardarVentas() {
+    try {
+        if (storageStatus.indexedDB) {
+            await guardarVentasIndexedDB();
+        }
+        if (storageStatus.localStorage) {
+            guardarVentasLocalStorage();
+        }
+        actualizarIndicadorEstado();
+    } catch (error) {
+        console.error('Error al guardar ventas:', error);
+        if (storageStatus.localStorage) {
+            guardarVentasLocalStorage();
+        }
+        actualizarIndicadorEstado();
+    }
+}
+
+// Guardar gastos
+async function guardarGastos() {
+    try {
+        if (storageStatus.indexedDB) {
+            await guardarGastosIndexedDB();
+        }
+        if (storageStatus.localStorage) {
+            guardarGastosLocalStorage();
+        }
+        actualizarIndicadorEstado();
+    } catch (error) {
+        console.error('Error al guardar gastos:', error);
+        if (storageStatus.localStorage) {
+            guardarGastosLocalStorage();
+        }
+        actualizarIndicadorEstado();
+    }
+}
+
+// Guardar ventas en IndexedDB
+async function guardarVentasIndexedDB() {
+    const db = await abrirIndexedDB();
+    const store = obtenerObjectStore(db, STORE_VENTAS, 'readwrite');
+    
+    // Limpiar store primero
+    await new Promise((resolve, reject) => {
+        const clearRequest = store.clear();
+        clearRequest.onsuccess = () => resolve();
+        clearRequest.onerror = () => reject(clearRequest.error);
+    });
+    
+    // Agregar todas las ventas
+    for (const venta of ventas) {
+        await new Promise((resolve, reject) => {
+            const addRequest = store.add(venta);
+            addRequest.onsuccess = () => resolve();
+            addRequest.onerror = () => reject(addRequest.error);
+        });
+    }
+}
+
+// Guardar gastos en IndexedDB
+async function guardarGastosIndexedDB() {
+    const db = await abrirIndexedDB();
+    const store = obtenerObjectStore(db, STORE_GASTOS, 'readwrite');
+    
+    // Limpiar store primero
+    await new Promise((resolve, reject) => {
+        const clearRequest = store.clear();
+        clearRequest.onsuccess = () => resolve();
+        clearRequest.onerror = () => reject(clearRequest.error);
+    });
+    
+    // Agregar todos los gastos
+    for (const gasto of gastos) {
+        await new Promise((resolve, reject) => {
+            const addRequest = store.add(gasto);
+            addRequest.onsuccess = () => resolve();
+            addRequest.onerror = () => reject(addRequest.error);
+        });
+    }
 }
 
 // Guardar ventas en localStorage
-function guardarVentas() {
+function guardarVentasLocalStorage() {
     localStorage.setItem(STORAGE_VENTAS, JSON.stringify(ventas));
 }
 
 // Guardar gastos en localStorage
-function guardarGastos() {
+function guardarGastosLocalStorage() {
     localStorage.setItem(STORAGE_GASTOS, JSON.stringify(gastos));
 }
 
@@ -100,7 +314,7 @@ function configurarNavegacion() {
 }
 
 // ============================================
-// FORMULARIOS
+// CONFIGURACIÓN ADICIONAL
 // ============================================
 
 function configurarFormularios() {
@@ -119,6 +333,109 @@ function configurarFormularios() {
     });
 }
 
+// Configurar botón de borrar todo
+function configurarBorrarTodo() {
+    const btnBorrarTodo = document.getElementById('btn-borrar-todo');
+    if (btnBorrarTodo) {
+        btnBorrarTodo.addEventListener('click', borrarTodosLosDatos);
+    }
+}
+
+// Actualizar indicador de estado de almacenamiento
+function actualizarIndicadorEstado() {
+    const indicador = document.getElementById('storage-status');
+    if (!indicador) return;
+    
+    if (storageStatus.indexedDB) {
+        indicador.className = 'storage-status success';
+        indicador.innerHTML = '✅ Datos guardados correctamente';
+        indicador.title = 'IndexedDB funcionando correctamente';
+    } else if (storageStatus.localStorage) {
+        indicador.className = 'storage-status warning';
+        indicador.innerHTML = '⚠️ Usando respaldo (localStorage)';
+        indicador.title = 'No se pudo usar IndexedDB, usando localStorage';
+    } else {
+        indicador.className = 'storage-status error';
+        indicador.innerHTML = '❌ Error: No se pueden guardar datos';
+        indicador.title = 'El almacenamiento está bloqueado. Haz respaldos frecuentes.';
+    }
+}
+
+// Borrar todos los datos
+async function borrarTodosLosDatos() {
+    // Primera confirmación
+    const confirm1 = confirm('⚠️ ADVERTENCIA: Estás a punto de borrar TODOS los datos.\n\nEsto incluye TODAS las ventas y gastos registrados.\n\n¿Estás seguro que quieres continuar?');
+    
+    if (!confirm1) {
+        return;
+    }
+    
+    // Segunda confirmación
+    const confirm2 = confirm('🚨 ÚLTIMA OPORTUNIDAD 🚨\n\nEsta acción NO SE PUEDE DESHACER.\n\nEscribe "CONFIRMAR" en la siguiente ventana si realmente quieres borrar TODO.');
+    
+    if (!confirm2) {
+        return;
+    }
+    
+    const confirm3 = prompt('Para confirmar, escribe exactamente: CONFIRMAR');
+    
+    if (confirm3 !== 'CONFIRMAR') {
+        mostrarMensaje('Operación cancelada. Los datos están seguros.', 'info');
+        return;
+    }
+    
+    try {
+        // Limpiar datos en memoria
+        ventas = [];
+        gastos = [];
+        
+        // Borrar de IndexedDB
+        if (storageStatus.indexedDB) {
+            try {
+                const db = await abrirIndexedDB();
+                const ventasStore = obtenerObjectStore(db, STORE_VENTAS, 'readwrite');
+                const gastosStore = obtenerObjectStore(db, STORE_GASTOS, 'readwrite');
+                
+                await new Promise((resolve, reject) => {
+                    const clearVentas = ventasStore.clear();
+                    clearVentas.onsuccess = () => resolve();
+                    clearVentas.onerror = () => reject();
+                });
+                
+                await new Promise((resolve, reject) => {
+                    const clearGastos = gastosStore.clear();
+                    clearGastos.onsuccess = () => resolve();
+                    clearGastos.onerror = () => reject();
+                });
+            } catch (error) {
+                console.error('Error al borrar de IndexedDB:', error);
+            }
+        }
+        
+        // Borrar de localStorage
+        if (storageStatus.localStorage) {
+            try {
+                localStorage.removeItem(STORAGE_VENTAS);
+                localStorage.removeItem(STORAGE_GASTOS);
+            } catch (error) {
+                console.error('Error al borrar de localStorage:', error);
+            }
+        }
+        
+        // Actualizar visualización
+        actualizarDashboard();
+        mostrarVentas();
+        mostrarGastos();
+        
+        // Mostrar mensaje de éxito
+        mostrarMensaje('✅ Todos los datos han sido borrados exitosamente. Puedes empezar un nuevo período.', 'success');
+        
+    } catch (error) {
+        console.error('Error al borrar datos:', error);
+        mostrarMensaje('❌ Error al borrar los datos. Intenta de nuevo.', 'error');
+    }
+}
+
 // Calcular total de venta automáticamente
 function calcularTotalVenta() {
     const cantidad = parseFloat(document.getElementById('venta-cantidad').value) || 0;
@@ -132,7 +449,7 @@ function calcularTotalVenta() {
 // GUARDAR VENTAS
 // ============================================
 
-function guardarVenta() {
+async function guardarVenta() {
     // Obtener valores del formulario
     const fecha = document.getElementById('venta-fecha').value;
     const descripcion = document.getElementById('venta-descripcion').value.trim();
@@ -161,8 +478,8 @@ function guardarVenta() {
     // Agregar a la lista
     ventas.push(nuevaVenta);
     
-    // Guardar en localStorage
-    guardarVentas();
+    // Guardar en almacenamiento
+    await guardarVentas();
     
     // Limpiar formulario
     document.getElementById('form-venta').reset();
@@ -183,7 +500,7 @@ function guardarVenta() {
 // GUARDAR GASTOS
 // ============================================
 
-function guardarGasto() {
+async function guardarGasto() {
     // Obtener valores del formulario
     const fecha = document.getElementById('gasto-fecha').value;
     const descripcion = document.getElementById('gasto-descripcion').value.trim();
@@ -210,8 +527,8 @@ function guardarGasto() {
     // Agregar a la lista
     gastos.push(nuevoGasto);
     
-    // Guardar en localStorage
-    guardarGastos();
+    // Guardar en almacenamiento
+    await guardarGastos();
     
     // Limpiar formulario
     document.getElementById('form-gasto').reset();
@@ -232,20 +549,20 @@ function guardarGasto() {
 // ELIMINAR REGISTROS
 // ============================================
 
-function eliminarVenta(id) {
+async function eliminarVenta(id) {
     if (confirm('¿Estás seguro de que quieres eliminar esta venta?')) {
         ventas = ventas.filter(v => v.id !== id);
-        guardarVentas();
+        await guardarVentas();
         mostrarVentas();
         actualizarDashboard();
         mostrarMensaje('Venta eliminada');
     }
 }
 
-function eliminarGasto(id) {
+async function eliminarGasto(id) {
     if (confirm('¿Estás seguro de que quieres eliminar este gasto?')) {
         gastos = gastos.filter(g => g.id !== id);
-        guardarGastos();
+        await guardarGastos();
         mostrarGastos();
         actualizarDashboard();
         mostrarMensaje('Gasto eliminado');
@@ -887,12 +1204,12 @@ function importarDatos() {
     document.getElementById('file-input').click();
 }
 
-function cargarDatosImportados(event) {
+async function cargarDatosImportados(event) {
     const file = event.target.files[0];
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const datos = JSON.parse(e.target.result);
             
@@ -900,8 +1217,8 @@ function cargarDatosImportados(event) {
                 if (datos.ventas) ventas = datos.ventas;
                 if (datos.gastos) gastos = datos.gastos;
                 
-                guardarVentas();
-                guardarGastos();
+                await guardarVentas();
+                await guardarGastos();
                 
                 actualizarDashboard();
                 mostrarVentas();
@@ -948,6 +1265,8 @@ function mostrarMensaje(texto, tipo = 'success') {
     
     if (tipo === 'error') {
         mensaje.style.backgroundColor = '#ef4444';
+    } else if (tipo === 'info') {
+        mensaje.style.backgroundColor = '#3b82f6';
     } else {
         mensaje.style.backgroundColor = '#10b981';
     }

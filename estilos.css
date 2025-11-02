@@ -87,6 +87,35 @@ header h1 {
     font-size: 1.1rem;
 }
 
+/* Indicador de estado de almacenamiento */
+.storage-status {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: var(--spacing-xs);
+    cursor: help;
+}
+
+.storage-status.success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.storage-status.warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+.storage-status.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
 /* ============================================
    NAVEGACIÓN (TABS)
    ============================================ */
@@ -605,6 +634,44 @@ header h1 {
 }
 
 /* ============================================
+   SECCIÓN DE PELIGRO (BORRAR TODO)
+   ============================================ */
+
+.danger-section {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background-color: #fef2f2;
+    border-radius: var(--radius-lg);
+    border: 2px solid #ef4444;
+    text-align: center;
+}
+
+.danger-section h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--color-danger);
+}
+
+.danger-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.danger-warning {
+    margin-top: var(--spacing-md);
+    color: var(--color-danger);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-large {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* ============================================
    MENSAJES FLOTANTES
    ============================================ */
 
@@ -747,12 +814,23 @@ header h1 {
         width: 100%;
     }
 
+    .danger-buttons .btn {
+        width: 100%;
+    }
+
     /* Ocultar algunas columnas en tablas pequeñas */
     .data-table th:nth-child(3),
     .data-table td:nth-child(3),
     .data-table th:nth-child(4),
     .data-table td:nth-child(4) {
         display: none;
+    }
+    
+    /* Ajustar tamaño del indicador de estado */
+    .storage-status {
+        display: block;
+        margin-top: var(--spacing-sm);
+        font-size: 0.8rem;
     }
 }
 

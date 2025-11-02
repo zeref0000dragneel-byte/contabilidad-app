@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#2563eb">
     <title>Sistema de Contabilidad - Mi Negocio</title>
     <link rel="stylesheet" href="estilos.css">
     <!-- CDN para generar PDFs -->
@@ -17,6 +20,7 @@
         <header>
             <h1>📊 Sistema de Contabilidad</h1>
             <p class="subtitle">Gestiona las finanzas de tu negocio</p>
+            <div id="storage-status" class="storage-status success">✅ Datos guardados correctamente</div>
         </header>
 
         <!-- Navegación principal -->
@@ -339,6 +343,15 @@
                 <button class="btn btn-warning" onclick="importarDatos()">📤 Importar Datos</button>
                 <input type="file" id="file-input" accept=".json" style="display: none;" onchange="cargarDatosImportados(event)">
             </div>
+        </div>
+        
+        <!-- Sección de borrar todo -->
+        <div class="danger-section">
+            <h3>🗑️ Administración de Datos</h3>
+            <div class="danger-buttons">
+                <button id="btn-borrar-todo" class="btn btn-danger btn-large">🗑️ Borrar Todos los Datos</button>
+            </div>
+            <p class="danger-warning">⚠️ Esta acción eliminará permanentemente todas tus ventas y gastos. No se puede deshacer.</p>
         </div>
     </div>
 
