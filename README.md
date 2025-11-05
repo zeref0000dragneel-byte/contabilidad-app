@@ -37,18 +37,73 @@ Si no tienes los archivos `icon-192.png` e `icon-512.png`:
 3. Haz clic en "Descargar icon-512.png"
 4. Guarda ambos archivos en la misma carpeta que `index.html`
 
-### Paso 2: Abrir el sistema según tu dispositivo
+### Paso 2: Iniciar Servidor Local (IMPORTANTE para PWA)
+
+**⚠️ IMPORTANTE:** Las PWAs requieren un servidor HTTP para funcionar. No puedes abrir directamente el archivo con `file://`.
+
+#### Opción 1: Usar el Script Automático (RECOMENDADO)
+
+**Windows:**
+1. Haz doble clic en `iniciar-servidor.bat`
+2. Se abrirá una ventana negra (PowerShell/CMD)
+3. Espera a que diga "Iniciando servidor en http://localhost:8000"
+4. Abre tu navegador y ve a: `http://localhost:8000/index.html`
+
+**Mac/Linux:**
+1. Abre Terminal en la carpeta del proyecto
+2. Ejecuta: `chmod +x iniciar-servidor.sh`
+3. Ejecuta: `./iniciar-servidor.sh`
+4. Abre tu navegador y ve a: `http://localhost:8000/index.html`
+
+#### Opción 2: Usar Python Manualmente
+
+**Windows:**
+```cmd
+cd C:\Users\Gabriel\Desktop\prueba
+python -m http.server 8000
+```
+
+**Mac/Linux:**
+```bash
+cd ~/Desktop/prueba
+python3 -m http.server 8000
+```
+
+Luego abre: `http://localhost:8000/index.html`
+
+#### Opción 3: Ver Instrucciones Detalladas
+
+Abre el archivo `servidor-local.html` en tu navegador para ver todas las opciones disponibles.
+
+### Paso 3: Abrir el sistema según tu dispositivo
 
 #### En Computadora (Windows, Mac, Linux)
 
-1. Abre tu navegador web (Chrome, Firefox, Edge, etc.)
-2. Presiona `Ctrl + O` (o `Cmd + O` en Mac) para abrir un archivo
-3. Busca y selecciona el archivo `index.html`
-4. ¡Listo! El sistema debería abrirse en tu navegador
+**IMPORTANTE:** Primero inicia el servidor local (Paso 2), luego:
 
-**Alternativa:** También puedes hacer doble clic en el archivo `index.html` y se abrirá automáticamente.
+1. Abre tu navegador web (Chrome, Firefox, Edge, etc.)
+2. Ve a: `http://localhost:8000/index.html`
+3. ¡Listo! El sistema debería abrirse correctamente
+
+**⚠️ NO uses:** `file://` o doble clic directo en `index.html` - esto no funcionará para PWA.
 
 #### En Android (Teléfono/Tablet)
+
+**Opción A: Usar Servidor Local (Recomendado para PWA)**
+
+1. **En tu computadora:**
+   - Inicia el servidor local (Paso 2)
+   - Asegúrate de que tu teléfono y computadora estén en la misma red WiFi
+
+2. **Obtener la IP de tu computadora:**
+   - Windows: Abre CMD y escribe `ipconfig` (busca "IPv4 Address")
+   - Mac/Linux: Abre Terminal y escribe `ifconfig` o `ip addr`
+
+3. **En tu teléfono:**
+   - Abre Chrome
+   - Ve a: `http://TU-IP:8000/index.html` (ejemplo: `http://192.168.1.100:8000/index.html`)
+
+**Opción B: Usar Archivos Locales (Sin PWA)**
 
 1. **Preparar los archivos:**
    - Copia la carpeta completa con todos los archivos a tu teléfono
@@ -58,7 +113,7 @@ Si no tienes los archivos `icon-192.png` e `icon-512.png`:
    - Abre la aplicación "Chrome" en tu teléfono
    - Ve a la ubicación donde copiaste los archivos
    - Toca en el archivo `index.html`
-   - El sistema se abrirá en Chrome
+   - El sistema se abrirá en Chrome (pero NO podrás instalar como PWA)
 
 3. **Agregar a pantalla de inicio (Recomendado):**
    - Una vez abierto el sistema, toca el menú (tres puntos) en Chrome
@@ -113,16 +168,23 @@ El sistema ahora es una **PWA completa** que puede:
 
 #### 📱 Instalar en Android (Chrome)
 
-1. Abre `index.html` en Chrome (en tu teléfono)
-2. Verás un **banner morado** en la parte inferior que dice "📱 Instala esta app para acceso rápido"
-3. Toca el botón **"Instalar Ahora"**
-4. Confirma la instalación en el diálogo que aparece
-5. ¡Listo! La app se instalará y aparecerá en tu pantalla de inicio
-6. Ábrela desde ahí - se verá como una app real (sin barra del navegador)
+**IMPORTANTE:** Primero necesitas usar un servidor local (no `file://`).
+
+1. **Inicia el servidor local** en tu computadora (Paso 2)
+2. **Abre en Chrome** desde tu teléfono usando la IP de tu computadora:
+   - Ejemplo: `http://192.168.1.100:8000/index.html`
+   - (Sustituye `192.168.1.100` por la IP de tu computadora)
+3. Verás un **banner morado** en la parte inferior que dice "📱 Instala esta app para acceso rápido"
+4. Toca el botón **"Instalar Ahora"**
+5. Confirma la instalación en el diálogo que aparece
+6. ¡Listo! La app se instalará y aparecerá en tu pantalla de inicio
+7. Ábrela desde ahí - se verá como una app real (sin barra del navegador)
 
 **Si no aparece el banner:**
+- Verifica que estés usando `http://` y no `file://`
 - Toca el menú de Chrome (tres puntos) → "Instalar app" o "Agregar a pantalla de inicio"
 - Asegúrate de que tengas los archivos `manifest.json` y los iconos en la misma carpeta
+- Verifica que el servidor local esté corriendo
 
 #### 🍎 Instalar en iPhone/iPad (Safari)
 
@@ -137,12 +199,20 @@ El sistema ahora es una **PWA completa** que puede:
 
 #### 💻 Instalar en Computadora (Chrome/Edge)
 
-1. Abre `index.html` en Chrome o Edge
-2. Verás un banner en la parte inferior que dice "📱 Instala esta app para acceso rápido"
-3. Haz clic en **"Instalar Ahora"**
-4. Confirma la instalación en el diálogo que aparece
-5. ¡Listo! La app se instalará y aparecerá como una aplicación independiente
-6. Ábrela desde el menú de inicio o escritorio - se abrirá en su propia ventana
+**IMPORTANTE:** Primero necesitas usar un servidor local (no `file://`).
+
+1. **Inicia el servidor local** (Paso 2)
+2. **Abre en Chrome o Edge**: `http://localhost:8000/index.html`
+3. Verás un banner en la parte inferior que dice "📱 Instala esta app para acceso rápido"
+4. Haz clic en **"Instalar Ahora"**
+5. Confirma la instalación en el diálogo que aparece
+6. ¡Listo! La app se instalará y aparecerá como una aplicación independiente
+7. Ábrela desde el menú de inicio o escritorio - se abrirá en su propia ventana
+
+**⚠️ Si no ves el banner:**
+- Verifica que estés usando `http://localhost:8000/index.html` y no `file://`
+- Asegúrate de que el servidor local esté corriendo
+- Verifica que tengas los archivos `manifest.json` y los iconos en la misma carpeta
 
 **Ventajas de instalarla:**
 - ✅ Se abre más rápido (archivos cacheados)

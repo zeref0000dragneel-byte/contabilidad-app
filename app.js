@@ -34,33 +34,98 @@ window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
+    console.log('✅ Evento de instalación PWA detectado');
+    
     // Mostrar banner de instalación
     const installBanner = document.getElementById('install-banner');
     if (installBanner && !window.matchMedia('(display-mode: standalone)').matches) {
-        // Solo mostrar si no está ya instalada
-        installBanner.style.display = 'flex';
+        // Solo mostrar si no está ya instalada y estamos en HTTP/HTTPS
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            installBanner.style.display = 'flex';
+            console.log('✅ Banner de instalación mostrado');
+        } else {
+            console.warn('⚠️ Banner no mostrado: requiere servidor HTTP');
+        }
     }
 });
 
 // Registrar Service Worker para funcionalidad offline
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .then(reg => {
-                console.log('✅ Service Worker registrado:', reg.scope);
-                
-                // Verificar actualizaciones cada hora
-                setInterval(() => {
-                    reg.update();
-                }, 3600000);
-            })
-            .catch(err => console.error('❌ Error al registrar Service Worker:', err));
+        // Solo registrar Service Worker si estamos en HTTP/HTTPS (no file://)
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => {
+                    console.log('✅ Service Worker registrado:', reg.scope);
+                    
+                    // Verificar actualizaciones cada hora
+                    setInterval(() => {
+                        reg.update();
+                    }, 3600000);
+                })
+                .catch(err => {
+                    console.warn('⚠️ Error al registrar Service Worker:', err);
+                    mostrarAdvertenciaServidor();
+                });
+        } else {
+            // Si estamos en file://, mostrar advertencia
+            console.warn('⚠️ Service Worker requiere servidor HTTP. Abre con servidor local.');
+            mostrarAdvertenciaServidor();
+        }
     });
 }
 
 // Detectar si la app ya está instalada
 if (window.matchMedia('(display-mode: standalone)').matches) {
     console.log('✅ App ejecutándose en modo standalone (instalada)');
+}
+
+// Función para mostrar advertencia sobre servidor
+function mostrarAdvertenciaServidor() {
+    // Solo mostrar una vez
+    if (localStorage.getItem('servidor_advertencia_vista')) return;
+    
+    setTimeout(() => {
+        const mensaje = document.createElement('div');
+        mensaje.id = 'advertencia-servidor';
+        mensaje.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 90%;
+            text-align: center;
+            animation: slideDown 0.3s ease;
+        `;
+        mensaje.innerHTML = `
+            <h3 style="margin: 0 0 10px 0; font-size: 18px;">⚠️ Servidor Requerido</h3>
+            <p style="margin: 0 0 15px 0; font-size: 14px;">
+                Para instalar la PWA, necesitas usar un servidor local.<br>
+                Abre <strong>servidor-local.html</strong> para ver las instrucciones.
+            </p>
+            <button onclick="this.parentElement.remove(); localStorage.setItem('servidor_advertencia_vista', 'true');" 
+                    style="background: white; color: #ff6b6b; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Entendido
+            </button>
+        `;
+        document.body.appendChild(mensaje);
+        
+        // Agregar animación CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }, 1000);
 }
 
 // ============================================
@@ -1232,22 +1297,32 @@ function configurarInstalacionPWA() {
     if (installButton) {
         installButton.addEventListener('click', async () => {
             if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`Instalación: ${outcome}`);
-                
-                if (outcome === 'accepted') {
-                    mostrarMensaje('✅ ¡App instalada! Ahora puedes abrirla desde tu pantalla de inicio.', 'success');
-                }
-                
-                deferredPrompt = null;
-                const installBanner = document.getElementById('install-banner');
-                if (installBanner) {
-                    installBanner.style.display = 'none';
+                try {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Instalación: ${outcome}`);
+                    
+                    if (outcome === 'accepted') {
+                        mostrarMensaje('✅ ¡App instalada! Ahora puedes abrirla desde tu pantalla de inicio.', 'success');
+                    }
+                    
+                    deferredPrompt = null;
+                    const installBanner = document.getElementById('install-banner');
+                    if (installBanner) {
+                        installBanner.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error al instalar:', error);
+                    mostrarMensaje('❌ Error al instalar. Verifica que uses un servidor HTTP.', 'error');
                 }
             } else {
-                // Fallback para iOS/Safari
-                mostrarMensaje('💡 En iPhone: Toca el botón compartir → "Agregar a pantalla de inicio"', 'info');
+                // Verificar si estamos en file://
+                if (window.location.protocol === 'file:') {
+                    mostrarMensaje('⚠️ Para instalar, necesitas usar un servidor local. Abre servidor-local.html para instrucciones.', 'error');
+                } else {
+                    // Fallback para iOS/Safari
+                    mostrarMensaje('💡 En iPhone: Toca el botón compartir → "Agregar a pantalla de inicio"', 'info');
+                }
             }
         });
     }
@@ -1275,6 +1350,19 @@ function configurarInstalacionPWA() {
             }
         }
     }
+    
+    // Mostrar banner después de un delay si no está instalada y estamos en HTTP
+    setTimeout(() => {
+        const installBanner = document.getElementById('install-banner');
+        if (installBanner && 
+            !window.matchMedia('(display-mode: standalone)').matches &&
+            (window.location.protocol === 'http:' || window.location.protocol === 'https:') &&
+            !deferredPrompt) {
+            // Si no hay deferredPrompt pero estamos en HTTP, puede ser que el navegador no soporte
+            // o que el manifest no esté cargando correctamente
+            console.log('ℹ️ Banner de instalación listo (esperando evento beforeinstallprompt)');
+        }
+    }, 2000);
 }
 
 // ============================================
