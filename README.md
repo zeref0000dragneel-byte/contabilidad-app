@@ -24,7 +24,7 @@ Sistema completo de contabilidad para negocios pequeños con funcionalidad offli
 
 ## 🚀 Demo
 
-🔗 [Ver demo en vivo](https://contabilidad-app-omega.vercel.app/) *(Próximamente)*
+🔗 [Ver demo en vivo](https://contabilidad-app-omega.vercel.app/) 
 
 ## 📱 Diseño Responsive
 
