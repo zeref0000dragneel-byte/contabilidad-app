@@ -138,6 +138,7 @@ Este proyecto es de código abierto bajo licencia MIT.
 
 ---
 
-**Desarrollado por Gabriel Zeref** | 📧 tu@email.com | [LinkedIn](tu-linkedin) | [GitHub](tu-github)
+**Desarrollado por Gabriel Zeref** | 📧 cuevasgutierrezjosegabriel@gmail.com
+| [LinkedIn](www.linkedin.com/in/josegabriel-dev) | [GitHub](https://github.com/zeref0000dragneel-byte)
 
 **Stack:** HTML5 · CSS3 · JavaScript · IndexedDB · Chart.js · PWA
