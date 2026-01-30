@@ -159,8 +159,8 @@ async function inicializarApp() {
     mostrarVentas();
     mostrarGastos();
     
-    // Establecer fecha actual como predeterminada en formularios
-    const hoy = new Date().toISOString().split('T')[0];
+    // Establecer fecha actual como predeterminada en formularios (usando fecha local)
+    const hoy = obtenerFechaLocal();
     document.getElementById('venta-fecha').value = hoy;
     document.getElementById('gasto-fecha').value = hoy;
     
@@ -494,7 +494,7 @@ async function borrarTodosLosDatos() {
     }
     
     try {
-        // Limpiar datos en memoria
+        // Limpiar datos en memoria PRIMERO
         ventas = [];
         gastos = [];
         
@@ -502,22 +502,53 @@ async function borrarTodosLosDatos() {
         if (storageStatus.indexedDB) {
             try {
                 const db = await abrirIndexedDB();
-                const ventasStore = obtenerObjectStore(db, STORE_VENTAS, 'readwrite');
-                const gastosStore = obtenerObjectStore(db, STORE_GASTOS, 'readwrite');
                 
+                // Borrar ventas con transacción completa
                 await new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_VENTAS], 'readwrite');
+                    const ventasStore = transaction.objectStore(STORE_VENTAS);
                     const clearVentas = ventasStore.clear();
-                    clearVentas.onsuccess = () => resolve();
-                    clearVentas.onerror = () => reject();
+                    clearVentas.onsuccess = () => {
+                        transaction.oncomplete = () => {
+                            console.log('✅ Ventas borradas de IndexedDB');
+                            resolve();
+                        };
+                        transaction.onerror = () => {
+                            console.error('Error en transacción de ventas:', transaction.error);
+                            reject(transaction.error);
+                        };
+                    };
+                    clearVentas.onerror = () => {
+                        console.error('Error al borrar ventas:', clearVentas.error);
+                        reject(clearVentas.error);
+                    };
                 });
                 
+                // Borrar gastos con transacción completa
                 await new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_GASTOS], 'readwrite');
+                    const gastosStore = transaction.objectStore(STORE_GASTOS);
                     const clearGastos = gastosStore.clear();
-                    clearGastos.onsuccess = () => resolve();
-                    clearGastos.onerror = () => reject();
+                    clearGastos.onsuccess = () => {
+                        transaction.oncomplete = () => {
+                            console.log('✅ Gastos borrados de IndexedDB');
+                            resolve();
+                        };
+                        transaction.onerror = () => {
+                            console.error('Error en transacción de gastos:', transaction.error);
+                            reject(transaction.error);
+                        };
+                    };
+                    clearGastos.onerror = () => {
+                        console.error('Error al borrar gastos:', clearGastos.error);
+                        reject(clearGastos.error);
+                    };
                 });
+                
+                console.log('✅ Todos los datos borrados de IndexedDB correctamente');
             } catch (error) {
                 console.error('Error al borrar de IndexedDB:', error);
+                // Continuar con localStorage incluso si IndexedDB falla
             }
         }
         
@@ -526,9 +557,25 @@ async function borrarTodosLosDatos() {
             try {
                 localStorage.removeItem(STORAGE_VENTAS);
                 localStorage.removeItem(STORAGE_GASTOS);
+                console.log('✅ Datos borrados de localStorage correctamente');
             } catch (error) {
                 console.error('Error al borrar de localStorage:', error);
             }
+        }
+        
+        // Asegurar que los arrays estén vacíos después de borrar
+        ventas = [];
+        gastos = [];
+        
+        // ❌ ELIMINADA: await cargarDatos(); - Esto recargaba los datos que acabamos de borrar
+        
+        // Verificar que efectivamente se borraron
+        if (ventas.length > 0 || gastos.length > 0) {
+            console.warn('⚠️ Algunos datos aún existen después del borrado. Forzando borrado...');
+            ventas = [];
+            gastos = [];
+            await guardarVentas();
+            await guardarGastos();
         }
         
         // Actualizar visualización
@@ -593,8 +640,8 @@ async function guardarVenta() {
     // Limpiar formulario
     document.getElementById('form-venta').reset();
     
-    // Restablecer fecha actual
-    const hoy = new Date().toISOString().split('T')[0];
+    // Restablecer fecha actual (usando fecha local)
+    const hoy = obtenerFechaLocal();
     document.getElementById('venta-fecha').value = hoy;
     
     // Actualizar visualización
@@ -642,8 +689,8 @@ async function guardarGasto() {
     // Limpiar formulario
     document.getElementById('form-gasto').reset();
     
-    // Restablecer fecha actual
-    const hoy = new Date().toISOString().split('T')[0];
+    // Restablecer fecha actual (usando fecha local)
+    const hoy = obtenerFechaLocal();
     document.getElementById('gasto-fecha').value = hoy;
     
     // Actualizar visualización
@@ -790,17 +837,31 @@ function limpiarFiltroGastos() {
 // ============================================
 
 function actualizarDashboard() {
-    const hoy = new Date().toISOString().split('T')[0];
+    // Obtener fecha actual en formato local (YYYY-MM-DD)
+    const hoy = obtenerFechaLocal();
+    
+    console.log('Fecha de hoy para dashboard:', hoy); // Debug
+    console.log('Ventas totales:', ventas.length);
+    console.log('Gastos totales:', gastos.length);
     
     // Calcular ingresos del día
     const ingresosDia = ventas
-        .filter(v => v.fecha === hoy)
+        .filter(v => {
+            console.log('Comparando venta fecha:', v.fecha, 'con hoy:', hoy, 'Coincide:', v.fecha === hoy);
+            return v.fecha === hoy;
+        })
         .reduce((sum, v) => sum + v.total, 0);
     
     // Calcular gastos del día
     const gastosDia = gastos
-        .filter(g => g.fecha === hoy)
+        .filter(g => {
+            console.log('Comparando gasto fecha:', g.fecha, 'con hoy:', hoy, 'Coincide:', g.fecha === hoy);
+            return g.fecha === hoy;
+        })
         .reduce((sum, g) => sum + g.monto, 0);
+    
+    console.log('Ingresos del día:', ingresosDia);
+    console.log('Gastos del día:', gastosDia);
     
     // Calcular saldo del día
     const saldoDia = ingresosDia - gastosDia;
@@ -814,10 +875,10 @@ function actualizarDashboard() {
     const fechaHace7Dias = new Date();
     fechaHace7Dias.setDate(fechaHace7Dias.getDate() - 7);
     const ingresosSemana = ventas
-        .filter(v => new Date(v.fecha) >= fechaHace7Dias)
+        .filter(v => new Date(v.fecha + 'T00:00:00') >= fechaHace7Dias)
         .reduce((sum, v) => sum + v.total, 0);
     const gastosSemana = gastos
-        .filter(g => new Date(g.fecha) >= fechaHace7Dias)
+        .filter(g => new Date(g.fecha + 'T00:00:00') >= fechaHace7Dias)
         .reduce((sum, g) => sum + g.monto, 0);
     const saldoSemanal = ingresosSemana - gastosSemana;
     
@@ -825,14 +886,14 @@ function actualizarDashboard() {
     const hoyObj = new Date();
     const ingresosMes = ventas
         .filter(v => {
-            const fechaVenta = new Date(v.fecha);
+            const fechaVenta = new Date(v.fecha + 'T00:00:00');
             return fechaVenta.getMonth() === hoyObj.getMonth() && 
                    fechaVenta.getFullYear() === hoyObj.getFullYear();
         })
         .reduce((sum, v) => sum + v.total, 0);
     const gastosMes = gastos
         .filter(g => {
-            const fechaGasto = new Date(g.fecha);
+            const fechaGasto = new Date(g.fecha + 'T00:00:00');
             return fechaGasto.getMonth() === hoyObj.getMonth() && 
                    fechaGasto.getFullYear() === hoyObj.getFullYear();
         })
@@ -975,8 +1036,8 @@ function generarGraficaVentas(ventasFiltradas) {
             datasets: [{
                 label: 'Ventas',
                 data: montos,
-                borderColor: 'rgb(37, 99, 235)',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderColor: '#1B263B',
+                backgroundColor: 'rgba(27, 38, 59, 0.1)',
                 tension: 0.1
             }]
         },
@@ -1023,14 +1084,14 @@ function generarGraficaGastos(gastosFiltrados) {
             datasets: [{
                 data: montos,
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.8)',
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(139, 92, 246, 0.8)',
-                    'rgba(236, 72, 153, 0.8)',
-                    'rgba(20, 184, 166, 0.8)',
-                    'rgba(156, 163, 175, 0.8)'
+                    'rgba(27, 38, 59, 0.8)',   // Azul marino
+                    'rgba(119, 141, 169, 0.8)', // Azul grisáceo
+                    'rgba(13, 27, 42, 0.8)',    // Azul oscuro
+                    'rgba(27, 38, 59, 0.6)',    // Azul marino más claro
+                    'rgba(119, 141, 169, 0.6)', // Azul grisáceo más claro
+                    'rgba(13, 27, 42, 0.6)',    // Azul oscuro más claro
+                    'rgba(27, 38, 59, 0.4)',    // Azul marino muy claro
+                    'rgba(119, 141, 169, 0.4)'  // Azul grisáceo muy claro
                 ]
             }]
         },
@@ -1061,12 +1122,12 @@ function generarGraficaGanancias(ingresos, egresos) {
                 {
                     label: 'Ingresos',
                     data: [ingresos],
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                    backgroundColor: 'rgba(119, 141, 169, 0.8)'
                 },
                 {
                     label: 'Egresos',
                     data: [egresos],
-                    backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                    backgroundColor: 'rgba(27, 38, 59, 0.8)'
                 }
             ]
         },
@@ -1134,12 +1195,12 @@ function generarGraficaMensual() {
                 {
                     label: 'Ingresos',
                     data: ingresosMensuales,
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                    backgroundColor: 'rgba(119, 141, 169, 0.8)'
                 },
                 {
                     label: 'Egresos',
                     data: egresosMensuales,
-                    backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                    backgroundColor: 'rgba(27, 38, 59, 0.8)'
                 }
             ]
         },
@@ -1560,6 +1621,23 @@ async function cargarDatosImportados(event) {
 // ============================================
 // FUNCIONES AUXILIARES
 // ============================================
+
+// Función helper para obtener la fecha local en formato YYYY-MM-DD
+// Esta función siempre devuelve la fecha local del usuario, sin problemas de zona horaria
+function obtenerFechaLocal() {
+    const ahora = new Date();
+    const año = ahora.getFullYear();
+    const mes = ahora.getMonth() + 1;
+    const día = ahora.getDate();
+    
+    const mesStr = String(mes).padStart(2, '0');
+    const díaStr = String(día).padStart(2, '0');
+    
+    const fechaLocal = `${año}-${mesStr}-${díaStr}`;
+    console.log('Fecha local generada:', fechaLocal, 'Hora actual:', ahora.toLocaleString());
+    
+    return fechaLocal;
+}
 
 function formatearMoneda(monto) {
     return new Intl.NumberFormat('es-MX', {
