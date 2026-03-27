@@ -1,7 +1,7 @@
 {
   "name": "Mi Contabilidad",
   "short_name": "Contabilidad",
-  "description": "Sistema de contabilidad para mi negocio",
+  "description": "Sistema de contabilidad personal y finanzas del hogar. Funciona sin conexión.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

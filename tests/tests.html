@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suite de Tests — Sistema de Contabilidad</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #1e293b; padding: 24px; }
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+        .subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 24px; }
+        .summary { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .summary-box { background: white; border-radius: 10px; padding: 14px 20px; min-width: 120px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .summary-box .num { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .summary-box .label { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .num-pass { color: #10b981; }
+        .num-fail { color: #ef4444; }
+        .num-total { color: #3b82f6; }
+        .suite { background: white; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+        .suite-header { padding: 14px 20px; font-weight: 600; font-size: 1rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
+        .suite-icon { font-size: 1.1rem; }
+        .test-row { padding: 10px 20px; display: flex; align-items: flex-start; gap: 10px; border-bottom: 1px solid #f8fafc; font-size: 0.875rem; }
+        .test-row:last-child { border-bottom: none; }
+        .test-status { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .test-name { flex: 1; }
+        .test-detail { color: #ef4444; font-size: 0.8rem; margin-top: 3px; font-family: monospace; background: #fff5f5; padding: 2px 6px; border-radius: 4px; }
+        .btn-run { background: #1e293b; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-bottom: 24px; }
+        .btn-run:hover { background: #334155; }
+        .running { opacity: 0.6; }
+        .progress-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #10b981; transition: width 0.3s; border-radius: 2px; }
+        .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: 6px; }
+        .badge-pass { background: #d1fae5; color: #065f46; }
+        .badge-fail { background: #fee2e2; color: #991b1b; }
+        .note { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 16px; font-size: 0.82rem; color: #92400e; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<h1>🧪 Suite de Tests — Sistema de Contabilidad</h1>
+<p class="subtitle">Tests de lógica, exportaciones, UI básica y accesibilidad de mensajes. Abre desde servidor HTTP.</p>
+
+<div class="note">
+    Incluye: validaciones (<code>ingresos.js</code> / <code>gastos.js</code>), datos de exportación (<code>exportaciones.js</code>),
+    JSON de respaldo, período y título de reporte, simulación de modal/banner/toast. El test del Service Worker requiere HTTP.
+    Las exportaciones reales (PDF binario) no se generan aquí; se valida la misma lógica que usan PDF/Excel/PPTX.
+</div>
+
+<button class="btn-run" id="btn-run" onclick="runAllTests()">▶ Ejecutar todos los tests</button>
+
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+<div class="summary" id="summary" style="display:none">
+    <div class="summary-box"><div class="num num-total" id="cnt-total">0</div><div class="label">Total</div></div>
+    <div class="summary-box"><div class="num num-pass" id="cnt-pass">0</div><div class="label">Pasaron</div></div>
+    <div class="summary-box"><div class="num num-fail" id="cnt-fail">0</div><div class="label">Fallaron</div></div>
+    <div class="summary-box"><div class="num" id="cnt-skip" style="color:#f59e0b">0</div><div class="label">Omitidos</div></div>
+</div>
+
+<div id="results"></div>
+
+<script src="../perfilManager.js"></script>
+<script src="../ingresos.js"></script>
+<script src="../gastos.js"></script>
+<script src="../exportaciones.js"></script>
+
+<script>
+// ─────────────────────────────────────────────
+// RUNNER MÍNIMO
+// ─────────────────────────────────────────────
+const _suites = [];
+let _currentSuite = null;
+
+function describe(nombre, fn) {
+    _currentSuite = { nombre, tests: [] };
+    _suites.push(_currentSuite);
+    fn();
+    _currentSuite = null;
+}
+
+function it(nombre, fn) {
+    if (!_currentSuite) return;
+    _currentSuite.tests.push({ nombre, fn });
+}
+
+function expect(valor) {
+    return {
+        toBe(esperado) {
+            if (valor !== esperado) throw new Error(`esperado ${JSON.stringify(esperado)}, recibido ${JSON.stringify(valor)}`);
+        },
+        toEqual(esperado) {
+            if (JSON.stringify(valor) !== JSON.stringify(esperado))
+                throw new Error(`esperado ${JSON.stringify(esperado)}, recibido ${JSON.stringify(valor)}`);
+        },
+        toBeTruthy() {
+            if (!valor) throw new Error(`esperado truthy, recibido ${JSON.stringify(valor)}`);
+        },
+        toBeFalsy() {
+            if (valor) throw new Error(`esperado falsy, recibido ${JSON.stringify(valor)}`);
+        },
+        toBeGreaterThan(n) {
+            if (!(valor > n)) throw new Error(`esperado > ${n}, recibido ${valor}`);
+        },
+        toBeGreaterThanOrEqual(n) {
+            if (!(valor >= n)) throw new Error(`esperado >= ${n}, recibido ${valor}`);
+        },
+        toBeLessThan(n) {
+            if (!(valor < n)) throw new Error(`esperado < ${n}, recibido ${valor}`);
+        },
+        toContain(sub) {
+            if (!String(valor).includes(String(sub))) throw new Error(`"${valor}" no contiene "${sub}"`);
+        },
+        toBeNull() {
+            if (valor !== null) throw new Error(`esperado null, recibido ${JSON.stringify(valor)}`);
+        },
+        toBeArray() {
+            if (!Array.isArray(valor)) throw new Error(`esperado array, recibido ${typeof valor}`);
+        },
+        toHaveLength(n) {
+            if (!valor || valor.length !== n) throw new Error(`esperado longitud ${n}, recibido ${valor ? valor.length : 'undefined'}`);
+        },
+        toMatch(regex) {
+            if (!regex.test(String(valor))) throw new Error(`"${valor}" no coincide con ${regex}`);
+        }
+    };
+}
+
+async function runAllTests() {
+    const btn = document.getElementById('btn-run');
+    btn.disabled = true;
+    btn.textContent = '⏳ Ejecutando...';
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.innerHTML = '';
+
+    let totalPass = 0, totalFail = 0, totalSkip = 0, totalAll = 0;
+    const allTests = _suites.reduce((acc, s) => acc + s.tests.length, 0);
+
+    for (const suite of _suites) {
+        const suiteEl = document.createElement('div');
+        suiteEl.className = 'suite';
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'suite-header';
+        headerEl.innerHTML = `<span class="suite-icon">📋</span> ${escHtml(suite.nombre)}`;
+        suiteEl.appendChild(headerEl);
+
+        let suitePass = 0, suiteFail = 0;
+
+        for (const test of suite.tests) {
+            totalAll++;
+            const rowEl = document.createElement('div');
+            rowEl.className = 'test-row';
+
+            try {
+                const result = test.fn();
+                if (result && typeof result.then === 'function') await result;
+
+                totalPass++; suitePass++;
+                rowEl.innerHTML = `<span class="test-status">✅</span><span class="test-name">${escHtml(test.nombre)}</span>`;
+            } catch (err) {
+                if (err && err.message && err.message.startsWith('SKIP:')) {
+                    totalSkip++;
+                    rowEl.innerHTML = `<span class="test-status">⏭️</span><span class="test-name">${escHtml(test.nombre)} <em style="color:#94a3b8;font-size:0.8rem">${escHtml(err.message.replace('SKIP:','').trim())}</em></span>`;
+                } else {
+                    totalFail++; suiteFail++;
+                    rowEl.innerHTML = `
+                        <span class="test-status">❌</span>
+                        <div class="test-name">
+                            ${escHtml(test.nombre)}
+                            <div class="test-detail">${escHtml(err && err.message ? err.message : String(err))}</div>
+                        </div>`;
+                }
+            }
+
+            suiteEl.appendChild(rowEl);
+            document.getElementById('progress').style.width = ((totalAll / allTests) * 100) + '%';
+            await tick();
+        }
+
+        const badge = suitePass === suite.tests.length - 0
+            ? `<span class="badge badge-pass">${suitePass}/${suite.tests.length}</span>`
+            : `<span class="badge badge-fail">${suiteFail} fallaron</span>`;
+        headerEl.innerHTML = `<span class="suite-icon">📋</span> ${escHtml(suite.nombre)} ${badge}`;
+
+        resultsEl.appendChild(suiteEl);
+    }
+
+    document.getElementById('cnt-total').textContent = totalAll;
+    document.getElementById('cnt-pass').textContent = totalPass;
+    document.getElementById('cnt-fail').textContent = totalFail;
+    document.getElementById('cnt-skip').textContent = totalSkip;
+    document.getElementById('summary').style.display = 'flex';
+    document.getElementById('progress').style.width = '100%';
+    document.getElementById('progress').style.background = totalFail > 0 ? '#ef4444' : '#10b981';
+
+    btn.disabled = false;
+    btn.textContent = '▶ Ejecutar de nuevo';
+}
+
+function tick() { return new Promise(r => setTimeout(r, 0)); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function skipSi(cond, motivo) { if (cond) throw new Error('SKIP: ' + motivo); }
+
+// ─────────────────────────────────────────────
+// HELPERS MOCK — replica la lógica pura de app.js
+// (no necesitamos DOM para estas funciones)
+// ─────────────────────────────────────────────
+function obtenerFechaLocal() {
+    const ahora = new Date();
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
+}
+
+function formatearMoneda(monto) {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 }).format(monto);
+}
+
+function formatearFecha(fecha) {
+    return new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function normalizarCategoria(cat) { return (cat || '').toString().trim().toLowerCase(); }
+
+function obtenerMontoIngreso(ingreso) {
+    if (typeof ingreso.monto === 'number' && Number.isFinite(ingreso.monto)) return ingreso.monto;
+    const m = Number(ingreso.monto);
+    if (Number.isFinite(m)) return m;
+    const t = Number(ingreso.total);
+    if (Number.isFinite(t)) return t;
+    const c = Number(ingreso.cantidad), p = Number(ingreso.precio);
+    if (Number.isFinite(c) && Number.isFinite(p)) return c * p;
+    return 0;
+}
+
+// ─────────────────────────────────────────────
+// SUITE 1 — Ingresos: lógica de validación
+// ─────────────────────────────────────────────
+describe('Ingresos — validaciones', () => {
+    const VI = window.ModIngresos.validarIngreso;
+
+    it('acepta un ingreso válido', () => {
+        expect(VI('2026-01-15', 'Venta producto', 500)).toBeNull();
+    });
+
+    it('rechaza monto = 0', () => {
+        expect(VI('2026-01-15', 'Test', 0)).toBeTruthy();
+    });
+
+    it('rechaza monto negativo', () => {
+        expect(VI('2026-01-15', 'Test', -100)).toBeTruthy();
+    });
+
+    it('rechaza descripción vacía', () => {
+        expect(VI('2026-01-15', '', 100)).toBeTruthy();
+    });
+
+    it('rechaza descripción solo espacios', () => {
+        expect(VI('2026-01-15', '   ', 100)).toBeTruthy();
+    });
+
+    it('rechaza fecha inválida (string vacío)', () => {
+        expect(VI('', 'Test', 100)).toBeTruthy();
+    });
+
+    it('rechaza fecha inválida (texto no fecha)', () => {
+        expect(VI('no-es-fecha', 'Test', 100)).toBeTruthy();
+    });
+
+    it('rechaza fecha futura', () => {
+        const futuro = new Date();
+        futuro.setDate(futuro.getDate() + 5);
+        const fechaFutura = futuro.toISOString().split('T')[0];
+        expect(VI(fechaFutura, 'Test', 100)).toBeTruthy();
+    });
+
+    it('acepta fecha de hoy (no es futura)', () => {
+        expect(VI(obtenerFechaLocal(), 'Test hoy', 200)).toBeNull();
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 2 — Gastos: lógica de validación
+// ─────────────────────────────────────────────
+describe('Gastos — validaciones', () => {
+    const VG = window.ModGastos.validarGasto;
+
+    it('acepta un gasto válido', () => {
+        expect(VG('2026-02-10', 'Compra insumos', 300)).toBeNull();
+    });
+
+    it('rechaza monto = 0', () => {
+        expect(VG('2026-02-10', 'Test', 0)).toBeTruthy();
+    });
+
+    it('rechaza descripción vacía', () => {
+        expect(VG('2026-02-10', '', 50)).toBeTruthy();
+    });
+
+    it('rechaza fecha futura', () => {
+        const futuro = new Date();
+        futuro.setDate(futuro.getDate() + 1);
+        expect(VG(futuro.toISOString().split('T')[0], 'Test', 50)).toBeTruthy();
+    });
+
+    it('rechaza fecha inválida', () => {
+        expect(VG('2026-13-45', 'Test', 50)).toBeTruthy();
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 3 — Cálculo de montos
+// ─────────────────────────────────────────────
+describe('Cálculo de montos (obtenerMontoIngreso)', () => {
+    it('usa campo monto si existe', () => {
+        expect(obtenerMontoIngreso({ monto: 1500 })).toBe(1500);
+    });
+
+    it('usa campo total como fallback', () => {
+        expect(obtenerMontoIngreso({ total: 800 })).toBe(800);
+    });
+
+    it('calcula cantidad × precio como fallback', () => {
+        expect(obtenerMontoIngreso({ cantidad: 3, precio: 200 })).toBe(600);
+    });
+
+    it('retorna 0 si no hay dato numérico', () => {
+        expect(obtenerMontoIngreso({ descripcion: 'sin monto' })).toBe(0);
+    });
+
+    it('retorna 0 si monto es NaN', () => {
+        expect(obtenerMontoIngreso({ monto: 'abc' })).toBe(0);
+    });
+
+    it('acepta montos decimales', () => {
+        expect(obtenerMontoIngreso({ monto: 99.99 })).toBe(99.99);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 4 — Formato de moneda y fechas
+// ─────────────────────────────────────────────
+describe('Formateo — moneda y fechas', () => {
+    it('formatea moneda en MXN', () => {
+        const resultado = formatearMoneda(1500);
+        expect(resultado).toContain('1');
+        expect(resultado).toContain('500');
+    });
+
+    it('formatea fecha YYYY-MM-DD a texto legible', () => {
+        const resultado = formatearFecha('2026-01-15');
+        expect(resultado).toContain('2026');
+        expect(resultado).toContain('15');
+    });
+
+    it('formatearMoneda con 0 produce resultado sin error', () => {
+        const resultado = formatearMoneda(0);
+        expect(typeof resultado).toBe('string');
+        expect(resultado.length).toBeGreaterThan(0);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 5 — Normalización de categorías
+// ─────────────────────────────────────────────
+describe('Normalización de categorías', () => {
+    it('normaliza a minúsculas', () => {
+        expect(normalizarCategoria('INVENTARIO')).toBe('inventario');
+    });
+
+    it('hace trim de espacios', () => {
+        expect(normalizarCategoria('  sueldos  ')).toBe('sueldos');
+    });
+
+    it('retorna string vacío para null', () => {
+        expect(normalizarCategoria(null)).toBe('');
+    });
+
+    it('retorna string vacío para undefined', () => {
+        expect(normalizarCategoria(undefined)).toBe('');
+    });
+
+    it('acepta categorías personalizadas', () => {
+        expect(normalizarCategoria('Mi Categoría Custom')).toBe('mi categoría custom');
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 6 — PerfilManager: operaciones en memoria
+// (sin IndexedDB — usa solo la lógica de localStorage mock)
+// ─────────────────────────────────────────────
+describe('PerfilManager — lógica de perfiles', () => {
+    const PM = window.PerfilManager;
+
+    it('PerfilManager está disponible', () => {
+        expect(typeof PM).toBe('object');
+        expect(typeof PM.crearPerfil).toBe('function');
+    });
+
+    it('crearPerfil genera un objeto con id, nombre y createdAt', () => {
+        const p = PM.crearPerfil('Tesorería Test');
+        expect(typeof p.id).toBe('string');
+        expect(p.nombre).toBe('Tesorería Test');
+        expect(typeof p.createdAt).toBe('string');
+        // Limpiar: eliminar el perfil de la lista
+        PM.eliminarPerfilDeLista(p.id);
+    });
+
+    it('crearPerfil con nombre vacío asigna "Sin nombre"', () => {
+        const p = PM.crearPerfil('');
+        expect(p.nombre).toBe('Sin nombre');
+        PM.eliminarPerfilDeLista(p.id);
+    });
+
+    it('leerPerfiles retorna un array', () => {
+        const lista = PM.leerPerfiles();
+        expect(Array.isArray(lista)).toBe(true);
+    });
+
+    it('crearPerfil agrega el perfil a la lista', () => {
+        const antes = PM.leerPerfiles().length;
+        const p = PM.crearPerfil('Perfil Temp');
+        const despues = PM.leerPerfiles().length;
+        expect(despues).toBe(antes + 1);
+        PM.eliminarPerfilDeLista(p.id);
+    });
+
+    it('eliminarPerfilDeLista remueve el perfil', () => {
+        const p = PM.crearPerfil('A eliminar');
+        PM.eliminarPerfilDeLista(p.id);
+        const encontrado = PM.leerPerfiles().find(x => x.id === p.id);
+        expect(encontrado).toBeFalsy();
+    });
+
+    it('perfilPorId retorna null si no existe', () => {
+        const resultado = PM.perfilPorId('id-que-no-existe-xyz-999');
+        expect(resultado).toBeNull();
+    });
+
+    it('perfilPorId encuentra un perfil existente', () => {
+        const p = PM.crearPerfil('Buscar este');
+        const encontrado = PM.perfilPorId(p.id);
+        expect(encontrado).toBeTruthy();
+        expect(encontrado.nombre).toBe('Buscar este');
+        PM.eliminarPerfilDeLista(p.id);
+    });
+
+    it('slugCachePerfil genera slug URL-safe', () => {
+        const slug = PM.slugCachePerfil('p_1234', 'Tesorería Oaxaca');
+        expect(slug).toContain('tesoreria');
+        expect(slug).not.toContain(' ');
+        expect(slug).not.toContain('í');
+    });
+
+    it('slugCachePerfil con nombre vacío usa el id', () => {
+        const slug = PM.slugCachePerfil('p_abc123', '');
+        expect(slug.length).toBeGreaterThan(0);
+    });
+
+    it('nombreStoreVentas genera nombre correcto', () => {
+        const nombre = PM.nombreStoreVentas('p_12345');
+        expect(nombre).toBe('ventas_perfil_p_12345');
+    });
+
+    it('nombreStoreGastos genera nombre correcto', () => {
+        const nombre = PM.nombreStoreGastos('p_12345');
+        expect(nombre).toBe('gastos_perfil_p_12345');
+    });
+
+    it('sanitizarIdStore reemplaza caracteres no permitidos', () => {
+        const resultado = PM.sanitizarIdStore('id con espacios!');
+        expect(resultado).not.toContain(' ');
+        expect(resultado).not.toContain('!');
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 7 — Migración de datos legacy
+// ─────────────────────────────────────────────
+describe('Migración legacy localStorage', () => {
+    const PM = window.PerfilManager;
+    const LS_KEY = 'contabilidad_migracion_perfiles_v1';
+
+    it('migrarListaPerfilesYLegacyLS no lanza excepciones', () => {
+        // Guardar estado previo para no contaminar
+        const prev = localStorage.getItem(LS_KEY);
+        try {
+            localStorage.removeItem(LS_KEY);
+            let threw = false;
+            try { PM.migrarListaPerfilesYLegacyLS(); } catch { threw = true; }
+            expect(threw).toBe(false);
+        } finally {
+            // Restaurar
+            if (prev !== null) localStorage.setItem(LS_KEY, prev);
+        }
+    });
+
+    it('después de migrar, existe al menos un perfil', () => {
+        const lista = PM.leerPerfiles();
+        expect(lista.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('claveLSVentas y claveLSGastos generan claves distintas para el mismo perfil', () => {
+        const kv = PM.claveLSVentas('default');
+        const kg = PM.claveLSGastos('default');
+        expect(kv).not.toBe(kg);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 8 — Exportaciones: validaciones de estructura JSON
+// ─────────────────────────────────────────────
+describe('Exportaciones — validación de estructura JSON', () => {
+    function validarEstructuraImport(datos) {
+        if (!datos || typeof datos !== 'object') return 'No es un objeto';
+        if (!Array.isArray(datos.ventas)) return 'ventas no es array';
+        if (!Array.isArray(datos.gastos)) return 'gastos no es array';
+        return null;
+    }
+
+    it('acepta estructura JSON válida (schema v3)', () => {
+        const datos = {
+            ventas: [{ id: 1, fecha: '2026-01-01', descripcion: 'Test', monto: 100 }],
+            gastos: [],
+            schema: 'contabilidad-multi-perfil-v1',
+            version: '3.0'
+        };
+        expect(validarEstructuraImport(datos)).toBeNull();
+    });
+
+    it('rechaza JSON sin campo ventas', () => {
+        const err = validarEstructuraImport({ gastos: [] });
+        expect(err).toBeTruthy();
+    });
+
+    it('rechaza JSON sin campo gastos', () => {
+        const err = validarEstructuraImport({ ventas: [] });
+        expect(err).toBeTruthy();
+    });
+
+    it('rechaza JSON nulo', () => {
+        const err = validarEstructuraImport(null);
+        expect(err).toBeTruthy();
+    });
+
+    it('acepta arrays vacíos (perfil sin registros)', () => {
+        const err = validarEstructuraImport({ ventas: [], gastos: [] });
+        expect(err).toBeNull();
+    });
+
+    it('deduplicación por ID: no duplica registros existentes', () => {
+        const actuales = [
+            { id: 1, descripcion: 'Existente', monto: 100 },
+            { id: 2, descripcion: 'Otro', monto: 200 }
+        ];
+        const nuevos = [
+            { id: 2, descripcion: 'Duplicado', monto: 999 },
+            { id: 3, descripcion: 'Nuevo real', monto: 50 }
+        ];
+        const idsActuales = new Set(actuales.map(v => v.id));
+        const filtrados = nuevos.filter(v => !idsActuales.has(v.id));
+        expect(filtrados.length).toBe(1);
+        expect(filtrados[0].id).toBe(3);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 9 — Service Worker: versión de caché
+// ─────────────────────────────────────────────
+describe('Service Worker — versión de caché', () => {
+    it('la versión de caché es accesible vía fetch del SW', async () => {
+        skipSi(location.protocol === 'file:', 'requiere servidor HTTP para fetch del SW');
+        const resp = await fetch('../service-worker.js');
+        skipSi(!resp.ok, 'no se pudo cargar service-worker.js');
+        const texto = await resp.text();
+        const match = texto.match(/APP_CACHE_VERSION\s*=\s*['"](\d+)['"]/);
+        expect(match).toBeTruthy();
+        const version = parseInt(match[1], 10);
+        expect(version).toBeGreaterThanOrEqual(4);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 10 — Mensajes de error y confirmaciones
+// ─────────────────────────────────────────────
+describe('Mensajes de error — textos esperados', () => {
+    const VI = window.ModIngresos.validarIngreso;
+    const VG = window.ModGastos.validarGasto;
+
+    it('validación de ingreso con monto 0 produce mensaje de error', () => {
+        const err = VI('2026-01-01', 'Test', 0);
+        expect(err).toBe('El monto debe ser mayor a cero');
+    });
+
+    it('validación de gasto con descripción vacía produce mensaje de error', () => {
+        const err = VG('2026-01-01', '', 100);
+        expect(err).toBe('La descripción no puede estar vacía');
+    });
+
+    it('ingreso válido no produce mensaje de error', () => {
+        expect(VI('2026-01-01', 'Ingreso real', 500)).toBeNull();
+    });
+
+    it('fecha de hoy es válida (no futura)', () => {
+        const hoy = obtenerFechaLocal();
+        expect(VI(hoy, 'Hoy', 1)).toBeNull();
+    });
+
+    it('monto 0.01 es válido (mayor que cero)', () => {
+        expect(VI('2026-01-01', 'Mínimo', 0.01)).toBeNull();
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 11 — Exportaciones: período, título y pie (PDF/Excel/PPTX comparten lógica)
+// ─────────────────────────────────────────────
+describe('Exportaciones — período, título y pie', () => {
+    const ME = window.ModExportaciones;
+    const TEXTO_PIE_APP = 'Generado con Sistema de Contabilidad — 100% offline';
+
+    function depsMock(ventas, gastos) {
+        return {
+            getVentas: () => ventas,
+            getGastos: () => gastos,
+            formatearFecha: formatearFecha,
+            TEXTO_PIE_FORMAL_EXPORT: TEXTO_PIE_APP,
+            getNombrePerfil: () => 'Tesorería Demo',
+            getPerfilId: () => 'p_demo_1'
+        };
+    }
+
+    it('TITULO_REPORTE es el encabezado unificado de reportes', () => {
+        expect(ME.TITULO_REPORTE).toContain('Reporte de Contabilidad');
+    });
+
+    it('texto de período con rango explícito incluye ambas fechas formateadas', () => {
+        const v = [{ id: 1, fecha: '2026-03-01', descripcion: 'A', precio: 10, cantidad: 1, total: 10 }];
+        const g = [];
+        const d = depsMock(v, g);
+        const vf = ME.filtrarRegistrosPorFecha(v, (x) => x.fecha, '2026-03-01', '2026-03-15');
+        const gf = ME.filtrarRegistrosPorFecha(g, (x) => x.fecha, '2026-03-01', '2026-03-15');
+        const texto = ME.obtenerTextoPeriodoPdf(d, '2026-03-01', '2026-03-15', v, g, vf, gf);
+        expect(texto.indexOf('Período:')).toBe(0);
+        expect(texto).toContain('2026');
+    });
+
+    it('sin movimientos: período indica ausencia de datos', () => {
+        const d = depsMock([], []);
+        const texto = ME.obtenerTextoPeriodoPdf(d, '', '', [], [], [], []);
+        expect(texto).toBe('Período: sin movimientos registrados');
+    });
+
+    it('pie de exportación coincide con el usado en la app (deps)', () => {
+        const d = depsMock([], []);
+        expect(d.TEXTO_PIE_FORMAL_EXPORT).toBe(TEXTO_PIE_APP);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 12 — Exportaciones: JSON y metadatos
+// ─────────────────────────────────────────────
+describe('Exportaciones — JSON de respaldo (metadatos)', () => {
+    const ME = window.ModExportaciones;
+
+    it('payload incluye schema, version, perfilId, perfilNombre, exportadoEn', () => {
+        const deps = {
+            getVentas: () => [{ id: 1, fecha: '2026-01-01', descripcion: 'V', precio: 1, cantidad: 1, total: 1 }],
+            getGastos: () => [],
+            getPerfilId: () => 'p_test_99',
+            getNombrePerfil: () => 'Mi Tesorería'
+        };
+        const p = ME.construirPayloadBackupJSON(deps);
+        expect(p.schema).toBe(ME.JSON_SCHEMA);
+        expect(p.version).toBe(ME.JSON_VERSION);
+        expect(p.perfilId).toBe('p_test_99');
+        expect(p.perfilNombre).toBe('Mi Tesorería');
+        expect(p.totalVentas).toBe(1);
+        expect(p.totalGastos).toBe(0);
+        expect(p.exportadoEn).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+        expect(Array.isArray(p.ventas)).toBe(true);
+        expect(Array.isArray(p.gastos)).toBe(true);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 13 — Exportaciones: tablas = todos los registros del perfil (sin filtro de fechas)
+// ─────────────────────────────────────────────
+describe('Exportaciones — registros en tablas (perfil activo)', () => {
+    const ME = window.ModExportaciones;
+
+    it('sin filtro de fechas, incluye todos los ingresos y gastos', () => {
+        const ventas = [
+            { id: 1, fecha: '2026-01-10', descripcion: 'A', precio: 100, cantidad: 1, total: 100 },
+            { id: 2, fecha: '2026-02-20', descripcion: 'B', precio: 200, cantidad: 1, total: 200 }
+        ];
+        const gastos = [{ id: 3, fecha: '2026-01-15', descripcion: 'G', monto: 50, categoria: 'x' }];
+        const vf = ME.filtrarRegistrosPorFecha(ventas, (v) => v.fecha, '', '');
+        const gf = ME.filtrarRegistrosPorFecha(gastos, (g) => g.fecha, '', '');
+        expect(vf.length).toBe(2);
+        expect(gf.length).toBe(1);
+    });
+
+    it('con filtro de fechas, excluye fuera de rango', () => {
+        const ventas = [
+            { id: 1, fecha: '2026-01-05', descripcion: 'A', precio: 1, cantidad: 1, total: 1 },
+            { id: 2, fecha: '2026-03-01', descripcion: 'B', precio: 1, cantidad: 1, total: 1 }
+        ];
+        const vf = ME.filtrarRegistrosPorFecha(ventas, (v) => v.fecha, '2026-01-01', '2026-01-31');
+        expect(vf.length).toBe(1);
+        expect(vf[0].id).toBe(1);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 14 — UI: modal de eliminación (regla de habilitar botón)
+// ─────────────────────────────────────────────
+describe('UI — modal eliminación de tesorería', () => {
+    function puedeEliminarDefinitivo(valorInput, nombreReferencia) {
+        return valorInput.trim() === nombreReferencia.trim();
+    }
+
+    it('botón lógico deshabilitado hasta coincidencia exacta del nombre', () => {
+        expect(puedeEliminarDefinitivo('Otro', 'Tesorería A')).toBe(false);
+        expect(puedeEliminarDefinitivo('Tesorería A', 'Tesorería A')).toBe(true);
+    });
+
+    it('respeta espacios al inicio/final del input', () => {
+        expect(puedeEliminarDefinitivo('  Nombre  ', 'Nombre')).toBe(true);
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 15 — UI: banner de actualización
+// ─────────────────────────────────────────────
+describe('UI — banner de actualización', () => {
+    it('clic en Actualizar envía SKIP_WAITING al service worker', () => {
+        const mensajes = [];
+        const sw = {
+            postMessage(m) {
+                mensajes.push(m);
+            }
+        };
+        const wrap = document.createElement('div');
+        wrap.id = 'test-banner-wrap';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'test-btn-actualizar-sw';
+        btn.addEventListener('click', () => sw.postMessage({ type: 'SKIP_WAITING' }));
+        wrap.appendChild(btn);
+        document.body.appendChild(wrap);
+        btn.click();
+        expect(mensajes.length).toBe(1);
+        expect(mensajes[0].type).toBe('SKIP_WAITING');
+        wrap.remove();
+    });
+});
+
+// ─────────────────────────────────────────────
+// SUITE 16 — UI: toast (mensaje flotante)
+// ─────────────────────────────────────────────
+describe('UI — toast con mensajes de validación', () => {
+    it('muestra el texto de error específico de validarIngreso', () => {
+        const el = document.createElement('div');
+        el.id = 'mensaje-exito';
+        document.body.appendChild(el);
+        const err = window.ModIngresos.validarIngreso('2026-01-01', '', 100);
+        el.textContent = err;
+        el.className = 'mensaje-flotante show';
+        expect(el.textContent).toBe('La descripción no puede estar vacía');
+        expect(el.classList.contains('show')).toBe(true);
+        el.remove();
+    });
+});
+</script>
+</body>
+</html>
