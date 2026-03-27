@@ -19,8 +19,8 @@
     const JSON_SCHEMA = 'contabilidad-multi-perfil-v1';
     const JSON_VERSION = '3.0';
 
-    /** Título mostrado en PDF, Excel y PowerPoint (debe coincidir en las tres exportaciones). */
-    const TITULO_REPORTE = '📊 Reporte de Contabilidad';
+    /** Título mostrado en PDF, Excel y PowerPoint (solo ASCII/Latin-1: jsPDF Helvetica no renderiza bien emoji/Unicode). */
+    const TITULO_REPORTE = 'Reporte de Contabilidad';
 
     function dibujarIconoGraficaPdf(doc, x, y) {
         doc.setFillColor(27, 38, 59);
@@ -158,12 +158,10 @@
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(17);
         doc.setTextColor(13, 27, 42);
-        const tituloPdf = TITULO_REPORTE;
-        const tituloLineas = doc.splitTextToSize(tituloPdf, pageW - 38);
         const alturaLineaTitulo = 7;
         const yTitulo = 19;
-        doc.text(tituloLineas, 33, yTitulo);
-        const ySubtitulo = yTitulo + tituloLineas.length * alturaLineaTitulo + 1;
+        doc.text(TITULO_REPORTE.trim(), 33, yTitulo);
+        const ySubtitulo = yTitulo + alturaLineaTitulo + 1;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(82, 82, 82);
