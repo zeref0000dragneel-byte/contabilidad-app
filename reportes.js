@@ -94,17 +94,18 @@
         contenedor.innerHTML = recientes
             .map((trans) => {
                 const icono = trans.tipo === 'ingreso' ? '💰' : '💸';
-                const claseMonto = trans.tipo === 'ingreso' ? 'positive' : 'negative';
                 const signo = trans.tipo === 'ingreso' ? '+' : '-';
+                const claseMontoColor = trans.tipo === 'ingreso' ? 'tw-text-emerald' : 'tw-text-ruby';
                 return `
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-desc">${icono} ${trans.descripcion}</div>
-                    <div class="transaction-date">${deps.formatearFecha(trans.fecha)}</div>
+            <div class="transaction-item tw-flex tw-w-full tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-white/10 tw-py-4 last:tw-border-b-0">
+                <div class="tw-flex tw-min-w-0 tw-flex-1 tw-items-center tw-gap-3">
+                    <div class="tw-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-white/10 tw-backdrop-blur-md tw-text-base leading-none" aria-hidden="true">${icono}</div>
+                    <div class="tw-min-w-0 tw-flex-1">
+                        <div class="tw-truncate tw-font-medium tw-text-slate-800">${trans.descripcion}</div>
+                        <div class="tw-text-xs tw-text-slate-500/80">${deps.formatearFecha(trans.fecha)}</div>
+                    </div>
                 </div>
-                <div class="transaction-amount ${claseMonto}">
-                    ${signo}${deps.formatearMoneda(trans.monto)}
-                </div>
+                <div class="tw-shrink-0 tw-text-right tw-text-base tw-font-bold ${claseMontoColor}">${signo}${deps.formatearMoneda(trans.monto)}</div>
             </div>
         `;
             })
