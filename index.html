@@ -486,6 +486,33 @@
         </section>
     </div>
 
+    <!-- Modal crear nuevo perfil (tesorería) — cristal premium -->
+    <div
+        id="modal-nuevo-perfil-overlay"
+        class="modal-nuevo-perfil-overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-nuevo-perfil-titulo"
+    >
+        <div class="modal-nuevo-perfil tw-rounded-3xl">
+            <h2 id="modal-nuevo-perfil-titulo" class="modal-nuevo-perfil-titulo">Crear nuevo perfil</h2>
+            <p class="modal-nuevo-perfil-sub">Elija un nombre para identificar esta tesorería en el dispositivo.</p>
+            <label for="modal-nuevo-perfil-input" class="modal-nuevo-perfil-label">Nombre de la tesorería / perfil:</label>
+            <input
+                type="text"
+                id="modal-nuevo-perfil-input"
+                class="modal-nuevo-perfil-input"
+                autocomplete="off"
+                placeholder="Ej.: Hogar, negocio, proyecto…"
+            />
+            <div class="modal-nuevo-perfil-acciones">
+                <button type="button" id="modal-nuevo-perfil-cancelar" class="modal-nuevo-perfil-btn-cancelar">Cancelar</button>
+                <button type="button" id="modal-nuevo-perfil-crear" class="modal-nuevo-perfil-btn-crear">Crear</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mensaje de confirmación -->
     <div id="mensaje-exito" class="mensaje-flotante"></div>
 

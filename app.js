@@ -551,11 +551,81 @@ function renderListaPerfiles() {
         .join('');
 }
 
+function abrirModalNuevoPerfil() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('modal-nuevo-perfil-overlay');
+        const input = document.getElementById('modal-nuevo-perfil-input');
+        const btnCrear = document.getElementById('modal-nuevo-perfil-crear');
+        const btnCancelar = document.getElementById('modal-nuevo-perfil-cancelar');
+        if (!overlay || !input || !btnCrear || !btnCancelar) {
+            const nombre = prompt('Nombre de la tesorería / perfil:', '');
+            resolve(nombre === null ? null : nombre);
+            return;
+        }
+
+        let settled = false;
+
+        const cleanup = () => {
+            btnCrear.removeEventListener('click', onCrear);
+            btnCancelar.removeEventListener('click', onCancelar);
+            overlay.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onDocKey);
+            input.removeEventListener('keydown', onInputKey);
+        };
+
+        function cerrar(valor) {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            overlay.classList.remove('modal-nuevo-perfil-overlay--open');
+            overlay.setAttribute('hidden', '');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            resolve(valor);
+        }
+
+        function onCrear() {
+            cerrar(input.value);
+        }
+        function onCancelar() {
+            cerrar(null);
+        }
+        function onBackdrop(e) {
+            if (e.target === overlay) cerrar(null);
+        }
+        function onDocKey(e) {
+            if (e.key === 'Escape') cerrar(null);
+        }
+        function onInputKey(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                onCrear();
+            }
+        }
+
+        input.value = '';
+        overlay.removeAttribute('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                overlay.classList.add('modal-nuevo-perfil-overlay--open');
+            });
+        });
+        input.focus();
+        btnCrear.addEventListener('click', onCrear);
+        btnCancelar.addEventListener('click', onCancelar);
+        overlay.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onDocKey);
+        input.addEventListener('keydown', onInputKey);
+    });
+}
+
 function configurarFormulariosPerfil() {
     const btnNuevo = document.getElementById('btn-nuevo-perfil');
     if (btnNuevo) {
         btnNuevo.addEventListener('click', async () => {
-            const nombre = prompt('Nombre de la tesorería / perfil:', '');
+            const nombre = await abrirModalNuevoPerfil();
             if (nombre === null) return;
             const perfil = PM.crearPerfil(nombre || 'Sin nombre');
             await PM.asegurarStoresPerfil(perfil.id);
